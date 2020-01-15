@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class FrontButton : MonoBehaviour
 {
+    public GameObject CheckWindow;
+
     public void OnClick(int num)
     {
         switch (num)

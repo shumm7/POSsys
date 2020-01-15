@@ -51,9 +51,19 @@ public class CheckWindow : MonoBehaviour
         fadeOut.Play();
     }
 
-    public void Quit()
+    public void Quit(string scene)
     {
         gameObject.SetActive(false);
-        GetComponent<SceneLoader>().LoadScene("Front");
+        GetComponent<SceneLoader>().LoadScene(scene);
+    }
+
+    public void QuitGame()
+    {
+        gameObject.SetActive(false);
+        #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+        #elif UNITY_STANDALONE
+            UnityEngine.Application.Quit();
+        #endif
     }
 }
