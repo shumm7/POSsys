@@ -47,7 +47,7 @@ public class GameManager : MonoBehaviour
         TabMode = num;
         for (int i = 0; i < 6; i++)
         {
-            OrderButton.transform.Find((i + 1).ToString()).gameObject.GetComponent<OrderButton>().TabChanged(TabMode, i + 1);
+            OrderButton.transform.Find((i+1).ToString()).gameObject.GetComponent<OrderButton>().TabChanged(TabMode, i + 1);
         }
         for(int i=0; i<4; i++)
         {
