@@ -24,7 +24,7 @@ public class OrderButton : MonoBehaviour
 
     public void ButtonPressed(int num)
     {
-
+        Controller.GetComponent<GameManager>().AddOrder(TabMode, num);
     }
 
     public void SetImage(int TabMode, int num)
@@ -36,6 +36,8 @@ public class OrderButton : MonoBehaviour
         {
             gameObject.SetActive(true);
             gameObject.transform.Find("Text").GetComponent<Text>().text = ProductList.ProductName[TabMode][num - 1];
+            gameObject.transform.Find("Price").GetComponent<Text>().text = ProductList.Price[TabMode][num - 1].ToString() + " 円";
+
             string dir = "list/" + (TabMode + 1).ToString() + "/" + num.ToString() + ".png";
             if (GetComponent<DataLoader>().checkExist(dir))
             {
@@ -56,6 +58,15 @@ public class OrderButton : MonoBehaviour
         else
         {
             gameObject.SetActive(false);
+        }
+
+        if (ProductList.Stock[TabMode][num - 1] == 0)
+        {
+            gameObject.GetComponent<Button>().interactable = false;
+        }
+        else
+        {
+            gameObject.GetComponent<Button>().interactable = true;
         }
     }
 
