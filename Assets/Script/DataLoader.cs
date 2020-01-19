@@ -9,6 +9,7 @@ public class DataLoader : MonoBehaviour
     public class Config
     {
         public string StoreName  = "テストストア";
+        public int Tax = 10;
     }
     public bool SaveConfig(Config _config)
     {

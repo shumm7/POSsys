@@ -8,7 +8,7 @@ public class OrderListButton : MonoBehaviour
     {
         Transform ControllerTransform = transform.parent.parent.parent.parent.Find("Controller");
         GameManager.OrderList tempList = ControllerTransform.GetComponent<GameManager>().orderList;
-        int i = int.Parse(transform.name) + ControllerTransform.GetComponent<OrderListComponent>().UpperNumber - 1;
+        int i = int.Parse(transform.name) + OrderListComponent.UpperNumber - 1;
         ControllerTransform.GetComponent<GameManager>().RemoveOrder(tempList.TabMode[i], tempList.Number[i]);
     }
 }
