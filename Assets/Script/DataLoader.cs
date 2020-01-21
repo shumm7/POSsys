@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.IO;
 using System;
+using System.Text;
 using LitJson;
 
 public class DataLoader : MonoBehaviour
@@ -10,10 +11,14 @@ public class DataLoader : MonoBehaviour
     {
         public string StoreName  = "テストストア";
         public int Tax = 10;
+        public string Encoding = "Shift_JIS";
+        public int ScreenResolutionWidth = 1920;
+        public int ScreenResolutionHeight = 1280;
+        public bool FullScreen = true;
     }
     public bool SaveConfig(Config _config)
     {
-        return saveFile(@"config.json", JsonUtility.ToJson(_config));
+        return generateConfig(@"config.json", JsonUtility.ToJson(_config));
     }
     public Config LoadConfig()
     {
@@ -81,7 +86,59 @@ public class DataLoader : MonoBehaviour
 
         try
         {
+            sw = new StreamWriter(@Filename, false, Encoding.GetEncoding(LoadConfig().Encoding));
+            sw.WriteLine(text);
+            sw.Flush();
+            res = true;
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarningFormat("Cannot open {0}", @Filename);
+            Debug.LogWarning(e.Message);
+            res = false;
+        }
+        finally
+        {
+            if (sw != null)
+                sw.Close();
+        }
+        return res;
+    }
+
+    private bool generateConfig(string Filename, string text)
+    {
+        StreamWriter sw = null;
+        bool res;
+
+        try
+        {
             sw = new StreamWriter(@Filename, false);
+            sw.WriteLine(text);
+            sw.Flush();
+            res = true;
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarningFormat("Cannot open {0}", @Filename);
+            Debug.LogWarning(e.Message);
+            res = false;
+        }
+        finally
+        {
+            if (sw != null)
+                sw.Close();
+        }
+        return res;
+    }
+
+    public bool AddLine(string Filename, string text)
+    {
+        StreamWriter sw = null;
+        bool res;
+
+        try
+        {
+            sw = new StreamWriter(@Filename, true, Encoding.GetEncoding(LoadConfig().Encoding));
             sw.WriteLine(text);
             sw.Flush();
             res = true;

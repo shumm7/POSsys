@@ -1,8 +1,10 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System;
+using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
+using LitJson;
 
 public class GameManager : MonoBehaviour
 {
@@ -40,6 +42,7 @@ public class GameManager : MonoBehaviour
         public int[] CurrentStock = new int[24];
         public int Price = 0;
         public int OverallAmount = 0;
+        public int Cash = 0;
 
         public void Reset()
         {
@@ -50,6 +53,9 @@ public class GameManager : MonoBehaviour
                 Amount[i] = -1;
                 CurrentStock[i] = -1;
             }
+            Price = 0;
+            OverallAmount = 0;
+            Cash = 0;
         }
 
         public void Add(DataLoader.List list, int _tabmode, int _num)
@@ -171,9 +177,8 @@ public class GameManager : MonoBehaviour
 
         for(int i=1; i<16; i++)
         {
-            Vector3 absolutePos = OrderListUI.transform.position;
-            absolutePos.y = absolutePos.y - 15 - (25 * i);
-            GameObject temp = Instantiate(OrderListPrefab, absolutePos, Quaternion.identity, OrderListUI.transform);
+            GameObject temp = Instantiate(OrderListPrefab, Vector3.zero, Quaternion.identity, OrderListUI.transform);
+            temp.transform.localPosition = new Vector3(0f, -20f - ( i *30 ), 0f);
             temp.name = i.ToString();
             temp.SetActive(false);
         }
@@ -352,11 +357,94 @@ public class GameManager : MonoBehaviour
             OrderCheckWindow.SetActive(true);
             OrderConfirmButton.GetComponent<Button>().interactable = false;
             OrderSubmitButton.GetComponent<Button>().interactable = true;
+            OrderCheckWindow.transform.Find("ウィンドウ").Find("現金").Find("Text").GetComponent<Text>().text = CashUI.text;
+            OrderCheckWindow.transform.Find("ウィンドウ").Find("釣銭").Find("Text").GetComponent<Text>().text = ChangeUI.text;
+
         }
         else
         {
             OrderConfirmButton.GetComponent<Button>().interactable = false;
         }
+    }
+
+    public void CompleteOrder()
+    {
+        orderList.Cash = int.Parse(CashUI.text.Substring(0, CashUI.text.Length - 2).Replace(",", ""));
+        GenerateReceipt(orderList);
+
+        for (int i = 0; i < 24; i++)
+        {
+            if (orderList.Number[i] != -1)
+            {
+                int _tabmode = orderList.TabMode[i];
+                int _num = orderList.Number[i] - 1;
+                productList.Sales[_tabmode][_num] += orderList.Amount[i];
+                if (productList.Stock[_tabmode][_num] != -1)
+                {
+                    productList.Stock[_tabmode][_num] -= orderList.Amount[i];
+                }
+                GetComponent<DataLoader>().SaveList(productList);
+            }
+        }
+        DataHolder.CurrentCashier += orderList.Price;
+
+        orderList.Reset();
+        GetComponent<OrderListComponent>().UpdateList(orderList);
+        PriceUI.text = MarkDecimal(orderList.Price) + " 円";
+
+        CashUI.text = "0 円";
+        ChangeUI.text = "0 円";
+        OrderCheckWindow.SetActive(false);
+        OrderConfirmUI.SetActive(false);
+    }
+
+    public void GenerateReceipt(OrderList _list)
+    {
+        DataLoader c = GetComponent<DataLoader>();
+        DateTime time = DateTime.Now;
+        Directory.CreateDirectory("receipt/logs/" + time.ToString("yyyyMMdd"));
+
+        string Filename = "receipt/" + time.ToString("yyyyMMdd_HHmmss") + ".txt";
+        int cnt = 1;
+        while (true)
+        {
+            if(!GetComponent<DataLoader>().checkExist(@"receipt/logs/" + time.ToString("yyyyMMdd") + "/" + cnt.ToString() + ".json"))
+            {
+                break;
+            }
+            cnt++;
+        }
+        string FilenameJson = "receipt/logs/" + time.ToString("yyyyMMdd") +"/"+cnt.ToString()+ ".json";
+
+        c.saveFile(@FilenameJson, JsonMapper.ToJson(_list));
+        c.saveFile(@Filename, StoreName);
+        c.AddLine(@Filename, "");
+        c.AddLine(@Filename, time.ToString("yyyy年MM月dd日 HH時mm分ss秒"));
+        c.AddLine(@Filename, "------------------------------");
+        for(int i=0; i<24; i++)
+        {
+            if (_list.Number[i] != -1 )
+            {
+                int _tabmode = _list.TabMode[i];
+                int _num = _list.Number[i] - 1;
+                c.AddLine(@Filename, productList.ProductName[_tabmode][_num]+ new String('　', 12- productList.ProductName[_tabmode][_num].Length)+"￥"+ BiggerNumberStr(MarkDecimal(productList.Price[_tabmode][_num]*orderList.Amount[i])));
+                c.AddLine(@Filename, "　　　￥"+productList.Price[_tabmode][_num] + "　　　@" + BiggerNumberStr(MarkDecimal(orderList.Amount[i])));
+            }
+        }
+        c.AddLine(@Filename, "小　計／"+ BiggerNumber(orderList.OverallAmount) + "点"+ new String('　', 5+ orderList.OverallAmount.ToString().Length) + "￥" + BiggerNumberStr(MarkDecimal(orderList.Price)));
+        c.AddLine(@Filename, "");
+        c.AddLine(@Filename, "------------------------------");
+        c.AddLine(@Filename, "合　計   ￥" + BiggerNumberStr(MarkDecimal(orderList.Price)));
+        c.AddLine(@Filename, "内　税   ￥" + BiggerNumberStr(MarkDecimal(orderList.Price * Tax / (100 + Tax))));
+        c.AddLine(@Filename, "お預り   ￥" + BiggerNumberStr(CashUI.text.Substring(0, CashUI.text.Length - 2)));
+        c.AddLine(@Filename, "お釣り   ￥" + BiggerNumberStr(ChangeUI.text.Substring(0, ChangeUI.text.Length - 2)));
+        c.AddLine(@Filename, "");
+        c.AddLine(@Filename, "上記正に領収いたしました");
+        c.AddLine(@Filename, "   伝票番号 "+ time.ToString("yyyyMMdd_HHmmss")+"(" + cnt.ToString() + ")");
+        c.AddLine(@Filename, "");
+        c.AddLine(@Filename, "------------------------------");
+        c.AddLine(@Filename, "お買い上げ、ありがとうございました。");
+        c.AddLine(@Filename, "またのご来店をお待ちしております。");
     }
 
     public string MarkDecimal(int _price)
@@ -383,6 +471,102 @@ public class GameManager : MonoBehaviour
 
             return ret;
         }
+    }
+
+    public string BiggerNumber(int num)
+    {
+        /*
+        string ret = "";
+        for(int i=0; i<num.ToString().Length; i++)
+        {
+            switch(num.ToString().Substring(i, 1))
+            {
+                case "0":
+                    ret += "０";
+                    break;
+                case "1":
+                    ret += "１";
+                    break;
+                case "2":
+                    ret += "２";
+                    break;
+                case "3":
+                    ret += "３";
+                    break;
+                case "4":
+                    ret += "４";
+                    break;
+                case "5":
+                    ret += "５";
+                    break;
+                case "6":
+                    ret += "６";
+                    break;
+                case "7":
+                    ret += "７";
+                    break;
+                case "8":
+                    ret += "８";
+                    break;
+                case "9":
+                    ret += "９";
+                    break;
+            }
+        }
+        return ret;
+        */
+        return num.ToString();
+    }
+
+    public string BiggerNumberStr(string num)
+    {
+        /*
+        string ret = "";
+        for (int i = 0; i < num.Length; i++)
+        {
+            switch (num.Substring(i, 1))
+            {
+                case "0":
+                    ret += "０";
+                    break;
+                case "1":
+                    ret += "１";
+                    break;
+                case "2":
+                    ret += "２";
+                    break;
+                case "3":
+                    ret += "３";
+                    break;
+                case "4":
+                    ret += "４";
+                    break;
+                case "5":
+                    ret += "５";
+                    break;
+                case "6":
+                    ret += "６";
+                    break;
+                case "7":
+                    ret += "７";
+                    break;
+                case "8":
+                    ret += "８";
+                    break;
+                case "9":
+                    ret += "９";
+                    break;
+                case ",":
+                    ret += "，";
+                    break;
+                default:
+                    ret += num.Substring(i, 1);
+                    break;
+            }
+        }
+        return ret;
+        */
+        return num;
     }
 
     private int Range(int num, int min, int max)

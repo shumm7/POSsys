@@ -20,12 +20,10 @@ public class FrontSceneChange : MonoBehaviour
         {
             DataLoader.Config temp = new DataLoader.Config();
             GetComponent<DataLoader>().SaveConfig(temp);
-            Name = GetComponent<DataLoader>().LoadConfig().StoreName;
         }
-        else
-        {
-            Name = GetComponent<DataLoader>().LoadConfig().StoreName;
-        }
+        DataLoader.Config cfg = GetComponent<DataLoader>().LoadConfig();
+        Name = cfg.StoreName;
+        Screen.SetResolution(cfg.ScreenResolutionWidth, cfg.ScreenResolutionHeight, cfg.FullScreen);
 
         if (GetComponent<DataLoader>().checkExist(@"list.json") == false)
         {
