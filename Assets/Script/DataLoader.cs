@@ -15,6 +15,10 @@ public class DataLoader : MonoBehaviour
         public int ScreenResolutionWidth = 1920;
         public int ScreenResolutionHeight = 1280;
         public bool FullScreen = true;
+        public bool EnableLINENotify = false;
+        public string LINENotifyToken = "";
+        public bool LINENotifyPurchaseNotice = false;
+
     }
     public bool SaveConfig(Config _config)
     {
@@ -78,6 +82,133 @@ public class DataLoader : MonoBehaviour
         return temp;
     }
 
+    public class Payment
+    {
+        public int RegisterCash;
+        public int Before;
+        public int After;
+        public int Increase;
+        public string Description;
+        public DateTime Time;
+    }
+
+    public Payment LoadPayment(int num)
+    {
+        if (checkExist("data/payment/" + num.ToString() + ".json"))
+        {
+            string json = loadFile("data/payment/" + num.ToString() + ".json");
+            Payment temp;
+            Directory.CreateDirectory("data/payment");
+            try
+            {
+                temp = JsonMapper.ToObject<Payment>(json);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning(e.Message);
+                return null;
+            }
+            return temp;
+        }
+        else
+        {
+            Payment temp = new Payment();
+            temp.RegisterCash = 0;
+            temp.Before = 0;
+            temp.After = 0;
+            temp.Increase = 0;
+            temp.Description = "";
+            return temp;
+        }
+    }
+
+    public Payment LoadLeastPayment()
+    {
+        int count = 0;
+        Directory.CreateDirectory("data/payment");
+        while (true)
+        {
+            if (!checkExist("data/payment/" + count.ToString() + ".json"))
+            {
+                break;
+            }
+            count++;
+        }
+        if (count != 0)
+        {
+            return LoadPayment(count - 1);
+        }
+        else
+        {
+            Payment temp = new Payment();
+            temp.RegisterCash = 0;
+            temp.Before = 0;
+            temp.After = 0;
+            temp.Increase = 0;
+            temp.Description = "";
+            return temp;
+        }
+    }
+
+    public void AddPayment(int money, string description, bool RegisterSettings)
+    {
+        int count = 0;
+        Directory.CreateDirectory("data/payment");
+        while (true)
+        {
+            if (!checkExist("data/payment/" + count.ToString() + ".json"))
+            {
+                break;
+            }
+            count++;
+        }
+
+        Payment temp = new Payment();
+
+        if (!RegisterSettings)
+        {
+            temp.Before = LoadLeastPayment().After;
+            temp.After = temp.Before + money;
+            temp.RegisterCash = LoadLeastPayment().RegisterCash;
+            temp.Increase = money;
+            temp.Description = description;
+            temp.Time = DateTime.Now;
+        }
+        else
+        {
+            temp.Before = LoadLeastPayment().After;
+            temp.After = money;
+            temp.RegisterCash = money;
+            temp.Increase = money - temp.Before;
+            temp.Description = description;
+            temp.Time = DateTime.Now;
+        }
+
+        saveFile("data/payment/" + count.ToString() + ".json", JsonMapper.ToJson(temp));
+    }
+
+    public GameManager.OrderList LoadOrderList(string date, int num)
+    {
+        if (checkExist("data/receipt/logs/" + date + "/" + num.ToString() + ".json"))
+        {
+            string json = loadFile("data/receipt/logs/" + date + "/"+ num.ToString() + ".json");
+            GameManager.OrderList temp;
+            try
+            {
+                temp = JsonMapper.ToObject<GameManager.OrderList>(json);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning(e.Message);
+                return null;
+            }
+            return temp;
+        }
+        else
+        {
+            return new GameManager.OrderList();
+        }
+    }
 
     public bool saveFile(string Filename, string text)
     {

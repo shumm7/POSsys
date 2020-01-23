@@ -20,6 +20,7 @@ public class GameManager : MonoBehaviour
     public GameObject OrderConfirmUI;
     public GameObject OrderCancelButton;
     public GameObject OrderConfirmButton;
+    public GameObject OrderConfirmButtonCover;
     public GameObject OrderCheckWindow;
     public Text ProductAmountUI;
     public Text CashUI;
@@ -238,11 +239,11 @@ public class GameManager : MonoBehaviour
         {
             if(int.Parse(CashUI.text.Substring(0, CashUI.text.Length - 2).Replace(",", "")) - orderList.Price < 0)
             {
-                OrderConfirmButton.GetComponent<Button>().interactable = false;
+                OrderConfirmButtonCover.SetActive(true);
             }
             else
             {
-                OrderConfirmButton.GetComponent<Button>().interactable = true;
+                OrderConfirmButtonCover.SetActive(false);
             }
 
             if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
@@ -355,7 +356,7 @@ public class GameManager : MonoBehaviour
     {
         if ((int.Parse(CashUI.text.Substring(0, CashUI.text.Length - 2).Replace(",", "")) - orderList.Price >= 0)){
             OrderCheckWindow.SetActive(true);
-            OrderConfirmButton.GetComponent<Button>().interactable = false;
+            OrderConfirmButtonCover.SetActive(true);
             OrderSubmitButton.GetComponent<Button>().interactable = true;
             OrderCheckWindow.transform.Find("ウィンドウ").Find("現金").Find("Text").GetComponent<Text>().text = CashUI.text;
             OrderCheckWindow.transform.Find("ウィンドウ").Find("釣銭").Find("Text").GetComponent<Text>().text = ChangeUI.text;
@@ -363,14 +364,26 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            OrderConfirmButton.GetComponent<Button>().interactable = false;
+            OrderConfirmButtonCover.SetActive(true);
         }
     }
 
     public void CompleteOrder()
     {
+        
         orderList.Cash = int.Parse(CashUI.text.Substring(0, CashUI.text.Length - 2).Replace(",", ""));
-        GenerateReceipt(orderList);
+        DateTime time = DateTime.Now;
+        Directory.CreateDirectory("data/receipt/logs/" + time.ToString("yyyyMMdd"));
+        int cnt = 1;
+        while (true)
+        {
+            if (!GetComponent<DataLoader>().checkExist(@"data/receipt/logs/" + time.ToString("yyyyMMdd") + "/" + cnt.ToString() + ".json"))
+            {
+                break;
+            }
+            cnt++;
+        }
+        GenerateReceipt(orderList, cnt, time);
 
         for (int i = 0; i < 24; i++)
         {
@@ -386,7 +399,7 @@ public class GameManager : MonoBehaviour
                 GetComponent<DataLoader>().SaveList(productList);
             }
         }
-        DataHolder.CurrentCashier += orderList.Price;
+        GetComponent<DataLoader>().AddPayment(orderList.Price, "商品購入-" + time.ToString("yyyyMMdd")+cnt, false);
 
         orderList.Reset();
         GetComponent<OrderListComponent>().UpdateList(orderList);
@@ -398,53 +411,45 @@ public class GameManager : MonoBehaviour
         OrderConfirmUI.SetActive(false);
     }
 
-    public void GenerateReceipt(OrderList _list)
+    public void GenerateReceipt(OrderList _list, int cnt, DateTime time)
     {
         DataLoader c = GetComponent<DataLoader>();
-        DateTime time = DateTime.Now;
-        Directory.CreateDirectory("receipt/logs/" + time.ToString("yyyyMMdd"));
-
-        string Filename = "receipt/" + time.ToString("yyyyMMdd_HHmmss") + ".txt";
-        int cnt = 1;
-        while (true)
-        {
-            if(!GetComponent<DataLoader>().checkExist(@"receipt/logs/" + time.ToString("yyyyMMdd") + "/" + cnt.ToString() + ".json"))
-            {
-                break;
-            }
-            cnt++;
-        }
-        string FilenameJson = "receipt/logs/" + time.ToString("yyyyMMdd") +"/"+cnt.ToString()+ ".json";
+        
+        string FilenameJson = "data/receipt/logs/" + time.ToString("yyyyMMdd") +"/"+cnt.ToString()+ ".json";
 
         c.saveFile(@FilenameJson, JsonMapper.ToJson(_list));
-        c.saveFile(@Filename, StoreName);
-        c.AddLine(@Filename, "");
-        c.AddLine(@Filename, time.ToString("yyyy年MM月dd日 HH時mm分ss秒"));
-        c.AddLine(@Filename, "------------------------------");
+
+        List<string> Text = new List<string>();
+        Text.Add(StoreName);
+        Text.Add("");
+        Text.Add(time.ToString("yyyy年MM月dd日 HH時mm分ss秒"));
+        Text.Add("-----------------------------");
         for(int i=0; i<24; i++)
         {
             if (_list.Number[i] != -1 )
             {
                 int _tabmode = _list.TabMode[i];
                 int _num = _list.Number[i] - 1;
-                c.AddLine(@Filename, productList.ProductName[_tabmode][_num]+ new String('　', 12- productList.ProductName[_tabmode][_num].Length)+"￥"+ BiggerNumberStr(MarkDecimal(productList.Price[_tabmode][_num]*orderList.Amount[i])));
-                c.AddLine(@Filename, "　　　￥"+productList.Price[_tabmode][_num] + "　　　@" + BiggerNumberStr(MarkDecimal(orderList.Amount[i])));
+                Text.Add(productList.ProductName[_tabmode][_num]+ new String('　', 12- productList.ProductName[_tabmode][_num].Length)+"￥"+ BiggerNumberStr(MarkDecimal(productList.Price[_tabmode][_num]*orderList.Amount[i])));
+                Text.Add("　　　￥" +productList.Price[_tabmode][_num] + "　　　@" + BiggerNumberStr(MarkDecimal(orderList.Amount[i])));
             }
         }
-        c.AddLine(@Filename, "小　計／"+ BiggerNumber(orderList.OverallAmount) + "点"+ new String('　', 5+ orderList.OverallAmount.ToString().Length) + "￥" + BiggerNumberStr(MarkDecimal(orderList.Price)));
-        c.AddLine(@Filename, "");
-        c.AddLine(@Filename, "------------------------------");
-        c.AddLine(@Filename, "合　計   ￥" + BiggerNumberStr(MarkDecimal(orderList.Price)));
-        c.AddLine(@Filename, "内　税   ￥" + BiggerNumberStr(MarkDecimal(orderList.Price * Tax / (100 + Tax))));
-        c.AddLine(@Filename, "お預り   ￥" + BiggerNumberStr(CashUI.text.Substring(0, CashUI.text.Length - 2)));
-        c.AddLine(@Filename, "お釣り   ￥" + BiggerNumberStr(ChangeUI.text.Substring(0, ChangeUI.text.Length - 2)));
-        c.AddLine(@Filename, "");
-        c.AddLine(@Filename, "上記正に領収いたしました");
-        c.AddLine(@Filename, "   伝票番号 "+ time.ToString("yyyyMMdd_HHmmss")+"(" + cnt.ToString() + ")");
-        c.AddLine(@Filename, "");
-        c.AddLine(@Filename, "------------------------------");
-        c.AddLine(@Filename, "お買い上げ、ありがとうございました。");
-        c.AddLine(@Filename, "またのご来店をお待ちしております。");
+        Text.Add("小　計／" + BiggerNumber(orderList.OverallAmount) + "点"+ new String('　', 5+ orderList.OverallAmount.ToString().Length) + "￥" + BiggerNumberStr(MarkDecimal(orderList.Price)));
+        Text.Add("");
+        Text.Add("-----------------------------");
+        Text.Add("合　計   ￥" + BiggerNumberStr(MarkDecimal(orderList.Price)));
+        Text.Add("内　税   ￥" + BiggerNumberStr(MarkDecimal(orderList.Price * Tax / (100 + Tax))));
+        Text.Add("お預り   ￥" + BiggerNumberStr(CashUI.text.Substring(0, CashUI.text.Length - 2)));
+        Text.Add("お釣り   ￥" + BiggerNumberStr(ChangeUI.text.Substring(0, ChangeUI.text.Length - 2)));
+        Text.Add("");
+        Text.Add("上記正に領収いたしました");
+        Text.Add("   伝票番号 " + time.ToString("yyyyMMdd_HHmmss")+"(" + cnt.ToString() + ")");
+        Text.Add("");
+        Text.Add("-----------------------------");
+        Text.Add("お買い上げ、ありがとうございました。");
+        Text.Add("またのご来店をお待ちしております。");
+
+        GetComponent<Receipt>().GenerateReceipt(Text, GetComponent<DataLoader>().LoadConfig().LINENotifyPurchaseNotice);
     }
 
     public string MarkDecimal(int _price)

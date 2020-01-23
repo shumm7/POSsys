@@ -22,6 +22,10 @@ public class SystemController : MonoBehaviour
         SettingsForm.transform.Find("ScreenResolutionWidth").GetComponent<InputField>().text = temp.ScreenResolutionWidth.ToString();
         SettingsForm.transform.Find("ScreenResolutionHeight").GetComponent<InputField>().text = temp.ScreenResolutionHeight.ToString();
         SettingsForm.transform.Find("Fullscreen").GetComponent<Toggle>().isOn = temp.FullScreen;
+        SettingsForm.transform.Find("EnableLINENotify").GetComponent<Toggle>().isOn = temp.EnableLINENotify;
+        SettingsForm.transform.Find("LINENotifyToken").GetComponent<InputField>().text = temp.LINENotifyToken;
+        SettingsForm.transform.Find("LINENotifyPurchaseNotice").GetComponent<Toggle>().isOn = temp.LINENotifyPurchaseNotice;
+
     }
 
     public void saveSettingsDaa()
@@ -63,6 +67,10 @@ public class SystemController : MonoBehaviour
             temp.ScreenResolutionHeight = 1280;
         }
         temp.FullScreen = SettingsForm.transform.Find("Fullscreen").GetComponent<Toggle>().isOn;
+        temp.EnableLINENotify = SettingsForm.transform.Find("EnableLINENotify").GetComponent<Toggle>().isOn;
+        temp.LINENotifyToken = SettingsForm.transform.Find("LINENotifyToken").GetComponent<InputField>().text;
+        temp.LINENotifyPurchaseNotice = SettingsForm.transform.Find("LINENotifyPurchaseNotice").GetComponent<Toggle>().isOn;
+
         GetComponent<DataLoader>().SaveConfig(temp);
         setSettingsData();
     }
