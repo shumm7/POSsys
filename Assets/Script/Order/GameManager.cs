@@ -8,581 +8,532 @@ using LitJson;
 
 public class GameManager : MonoBehaviour
 {
-    public Text TimeUI;
-    public GameObject Tabs;
-    public GameObject OrderButton;
-    public Text PriceUI;
-    public GameObject BackButton;
-    public GameObject OrderListUI;
-    public GameObject OrderListPrefab;
-    public GameObject OrderSubmitButton;
+    public static List<DataLoader.List> productList;
+    public List<OrderList> orderList;
+    string StoreName;
+    int TabMode;
+    int[] 商品数;
+    int Page;
+    int[] MaxPage;
+    int 現金;
+    int 割引額;
 
-    public GameObject OrderConfirmUI;
-    public GameObject OrderCancelButton;
-    public GameObject OrderConfirmButton;
-    public GameObject OrderConfirmButtonCover;
-    public GameObject OrderCheckWindow;
-    public Text ProductAmountUI;
-    public Text CashUI;
-    public Text InsideTax;
-    public Text ChangeUI;
+    //GameObject
+    public GameObject タブ;
+    public GameObject 商品ボタン;
+    public GameObject 注文履歴;
+    public GameObject 注文履歴ボタンPrefab;
+    public GameObject 精算画面;
+    public Text お釣り;
+    public GameObject 割引画面;
+    public GameObject 精算終了確認;
+    public GameObject Numpad;
+    public Text 小計金額;
+    public Button 注文ボタン;
+    public Button 注文確定ボタン;
+    public Button 注文キャンセルボタン;
+    public Button ScrollButtonUp;
+    public Button ScrollButtonDown;
+    public GameObject 終了確認画面;
 
-    public static DataLoader.List productList;
-    public OrderList orderList;
-    public int TabMode = 0;
-    private int CurrentPrice = 0;
-
-    private int Tax;
-    private string StoreName;
 
     public class OrderList
     {
-        public int[] TabMode = new int[24];
-        public int[] Number = new int[24];
-        public int[] Amount = new int[24];
-        public int[] CurrentStock = new int[24];
+        public string Name = "";
+        public int Category = -1;
+        public int Number = -1;
+        public int Amount = 0;
         public int Price = 0;
-        public int OverallAmount = 0;
-        public int Cash = 0;
+    }
 
-        public void Reset()
-        {
-            for (int i = 0; i < 24; i++)
-            {
-                TabMode[i] = -1;
-                Number[i] = -1;
-                Amount[i] = -1;
-                CurrentStock[i] = -1;
-            }
-            Price = 0;
-            OverallAmount = 0;
-            Cash = 0;
-        }
-
-        public void Add(DataLoader.List list, int _tabmode, int _num)
-        {
-            if (list.Available[_tabmode][_num-1] && list.Stock[_tabmode][_num-1] != 0)
-            {
-                int i;
-                bool flag = false;
-                for (i = 0; i < 24; i++)
-                {
-                    if (TabMode[i] == _tabmode && Number[i] == _num)
-                    {
-                        flag = true;
-                        break;
-                    }
-                }
-                if (flag)
-                {
-                    if (CurrentStock[i] != 0) {
-                        Amount[i]++;
-                        Price += list.Price[_tabmode][_num - 1];
-                        if (CurrentStock[i] != -1)
-                        {
-                            CurrentStock[i]--;
-                        }
-                        OverallAmount++;
-                    }
-                }
-                else
-                {
-                    for (i = 0; i < 24; i++)
-                    {
-                        if (TabMode[i] == -1)
-                        {
-                            break;
-                        }
-                    }
-
-                    if (i >= 15)
-                    {
-                        OrderListComponent.AddUpperNumber(1);
-                    }
-                    TabMode[i] = _tabmode;
-                    Number[i] = _num;
-                    Amount[i] = 1;
-                    CurrentStock[i] = list.Stock[_tabmode][_num-1] - 1;
-                    Price += list.Price[_tabmode][_num-1];
-                    OverallAmount++;
-                }
-            }
-        }
-
-        public void Remove(DataLoader.List list, int _tabmode, int _num)
-        {
-            if (list.Available[_tabmode][_num-1])
-            {
-                int i;
-                bool flag = false;
-                for (i = 0; i < 24; i++)
-                {
-                    if (TabMode[i] == _tabmode && Number[i] == _num)
-                    {
-                        flag = true;
-                        break;
-                    }
-                }
-
-                if (flag)
-                {
-                    Price -= list.Price[_tabmode][_num-1];
-                    OverallAmount--;
-                    if (CurrentStock[i] != -1)
-                    {
-                        CurrentStock[i]++;
-                    }
-
-                    if (Amount[i] > 1)
-                    {
-                        Amount[i] -= 1;
-                    }
-                    else
-                    {
-                        int[,] temp = new int[4, 24];
-
-                        for(int j=i+1; j<24; j++)
-                        {
-                            temp[0, j] = TabMode[j];
-                            temp[1, j] = Number[j];
-                            temp[2, j] = Amount[j];
-                            temp[3, j] = CurrentStock[j];
-                        }
-                        for (int j = i; j < 24 - 1; j++)
-                        {
-                            TabMode[j] = temp[0, j+1];
-                            Number[j] = temp[1, j+1];
-                            Amount[j] = temp[2, j+1];
-                            CurrentStock[j] = temp[3, j+1];
-                        }
-                        TabMode[23] = -1;
-                        Number[23] = -1;
-                        Amount[23] = -1;
-                        CurrentStock[23] = -1;
-                    }
-                }
-            }
+    public class OrderListMapper : CsvHelper.Configuration.ClassMap<OrderList>
+    {
+        public OrderListMapper()
+        { 
+            Map(x => x.Name).Index(0);
+            Map(x => x.Category).Index(1);
+            Map(x => x.Number).Index(2);
+            Map(x => x.Amount).Index(3);
+            Map(x => x.Price).Index(4);
         }
     }
 
     void Start()
     {
-        CurrentPrice = 0;
-        PriceUI.text = MarkDecimal(CurrentPrice) + " 円";
-        orderList = new OrderList();
-        orderList.Reset();
+        productList = DataLoader.LoadList();
+        orderList = new List<OrderList>();
+        StoreName = GetComponent<DataLoader>().LoadConfig().StoreName;
+        TabMode = 0;
+        Page = 0;
+        商品数 = new int[4];
+        MaxPage = new int[4];
+        現金 = 0;
 
-        DataLoader.Config configulation = GetComponent<DataLoader>().LoadConfig();
-        StoreName = configulation.StoreName;
-        Tax = configulation.Tax;
+        精算画面.SetActive(false);
+        割引画面.SetActive(false);
 
-        for(int i=1; i<16; i++)
+        for (int i =0; i<4; i++)
         {
-            GameObject temp = Instantiate(OrderListPrefab, Vector3.zero, Quaternion.identity, OrderListUI.transform);
-            temp.transform.localPosition = new Vector3(0f, -20f - ( i *30 ), 0f);
-            temp.name = i.ToString();
-            temp.SetActive(false);
-        }
-        
-        productList = GetComponent<DataLoader>().LoadList();
-        for(int i = 1; i<=4; i++)
-        {
-            Tabs.transform.Find(i.ToString()).transform.Find("Text").GetComponent<Text>().text = productList.CategoryName[i - 1];
-            Tabs.transform.Find(i.ToString()).gameObject.GetComponent<Button>().interactable = true;
-        }
-        Tabs.transform.Find("1").gameObject.GetComponent<Button>().interactable = false;
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        DateTime Time = DateTime.Now;
-        TimeUI.text = LintNumber(Time.Month) + "月" + LintNumber(Time.Day) + "日　" + LintNumber(Time.Hour) + "：" + LintNumber(Time.Minute);
-
-        if (orderList.OverallAmount > 0)
-        {
-            OrderSubmitButton.GetComponent<Button>().interactable = true;
-        }
-        else
-        {
-            OrderSubmitButton.GetComponent<Button>().interactable = false;
-        }
-
-        if (!OrderConfirmUI.activeSelf && !OrderCheckWindow.activeSelf)
-        {
-
-            if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
-                AddOrder(TabMode, 1);
-            else if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
-                AddOrder(TabMode, 2);
-            else if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
-                AddOrder(TabMode, 3);
-            else if (Input.GetKeyDown(KeyCode.Alpha4) || Input.GetKeyDown(KeyCode.Keypad4))
-                AddOrder(TabMode, 4);
-            else if (Input.GetKeyDown(KeyCode.Alpha5) || Input.GetKeyDown(KeyCode.Keypad5))
-                AddOrder(TabMode, 5);
-            else if (Input.GetKeyDown(KeyCode.Alpha6) || Input.GetKeyDown(KeyCode.Keypad6))
-                AddOrder(TabMode, 6);
-            else if (Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Return))
-                OrderButtonClicked();
-            else if (Input.GetKeyDown(KeyCode.Escape))
-                BackButton.GetComponent<CheckWindow>().WindowAwake();
-            else if (Input.GetKeyDown(KeyCode.RightArrow))
-                TabButtonClicked(Range(TabMode+1, 0, 3));
-            else if (Input.GetKeyDown(KeyCode.LeftArrow))
-                TabButtonClicked(Range(TabMode-1, 0, 3));
-
-
-        }
-
-        if (OrderConfirmUI.activeSelf && !OrderCheckWindow.activeSelf)
-        {
-            if(int.Parse(CashUI.text.Substring(0, CashUI.text.Length - 2).Replace(",", "")) - orderList.Price < 0)
+            商品数[i] = ProductList.各カテゴリーの商品数取得(productList, i);
+            if (商品数[i] > 6)
             {
-                OrderConfirmButtonCover.SetActive(true);
+                MaxPage[i] = (int)Math.Ceiling((float)商品数[i] / 3f) - 2;
             }
             else
             {
-                OrderConfirmButtonCover.SetActive(false);
+                MaxPage[i] = 0;
+            }
+        }
+
+        商品ボタン表示();
+    }
+
+    void Update()
+    {
+        //スクロールボタン
+        if (Page == MaxPage[TabMode])
+        {
+            ScrollButtonDown.interactable = false;
+        }
+        else
+        {
+            ScrollButtonDown.interactable = true;
+        }
+        if (Page == 0)
+        {
+            ScrollButtonUp.interactable = false;
+        }
+        else
+        {
+            ScrollButtonUp.interactable = true;
+        }
+
+        //タブ
+        for(int i=0; i<4; i++)
+        {
+            Text Tab = タブ.transform.Find((i + 1).ToString()).Find("Text").GetComponent<Text>();
+            Tab.text = GetComponent<DataLoader>().LoadConfig().TabName[i];
+        }
+
+        if (精算終了確認.activeSelf == true)
+        {
+            注文確定ボタン.interactable = false;
+            注文キャンセルボタン.interactable = false;
+        }
+        else
+        {
+            注文確定ボタン.interactable = true;
+            注文キャンセルボタン.interactable = true;
+        }
+
+        if (精算画面.activeSelf==false && 精算終了確認.activeSelf==false && 終了確認画面.activeSelf==false) //メイン画面
+        {
+            //注文数ゼロ時の処理
+            if (注文情報取得().Amount == 0)
+            {
+                注文ボタン.interactable = false;
+            }
+            else
+            {
+                注文ボタン.interactable = true;
             }
 
             if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
-                GetComponent<NumPadKey>().KeyPressed("1");
+                注文追加(0);
             else if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
-                GetComponent<NumPadKey>().KeyPressed("2");
+                注文追加(1);
             else if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
-                GetComponent<NumPadKey>().KeyPressed("3");
+                注文追加(2);
             else if (Input.GetKeyDown(KeyCode.Alpha4) || Input.GetKeyDown(KeyCode.Keypad4))
-                GetComponent<NumPadKey>().KeyPressed("4");
+                注文追加(3);
             else if (Input.GetKeyDown(KeyCode.Alpha5) || Input.GetKeyDown(KeyCode.Keypad5))
-                GetComponent<NumPadKey>().KeyPressed("5");
+                注文追加(4);
             else if (Input.GetKeyDown(KeyCode.Alpha6) || Input.GetKeyDown(KeyCode.Keypad6))
-                GetComponent<NumPadKey>().KeyPressed("6");
-            else if (Input.GetKeyDown(KeyCode.Alpha7) || Input.GetKeyDown(KeyCode.Keypad7))
-                GetComponent<NumPadKey>().KeyPressed("7");
-            else if (Input.GetKeyDown(KeyCode.Alpha8) || Input.GetKeyDown(KeyCode.Keypad8))
-                GetComponent<NumPadKey>().KeyPressed("8");
-            else if (Input.GetKeyDown(KeyCode.Alpha9) || Input.GetKeyDown(KeyCode.Keypad9))
-                GetComponent<NumPadKey>().KeyPressed("9");
-            else if (Input.GetKeyDown(KeyCode.Alpha0) || Input.GetKeyDown(KeyCode.Keypad0))
-                GetComponent<NumPadKey>().KeyPressed("0");
-            else if (Input.GetKeyDown(KeyCode.Clear))
-                GetComponent<NumPadKey>().KeyPressed("Clear");
-            else if (Input.GetKeyDown(KeyCode.Delete) || Input.GetKeyDown(KeyCode.Backspace))
-                GetComponent<NumPadKey>().KeyPressed("Del");
+                注文追加(5);
             else if (Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Return))
-                OrderConfirmButtonClicked();
+                Clicked注文ボタン();
             else if (Input.GetKeyDown(KeyCode.Escape))
-                OrderCancelButtonClicked();
+                終了確認画面.GetComponent<CheckWindow>().WindowAwake();
+            else if (Input.GetKeyDown(KeyCode.RightArrow))
+                Clickedタブボタン(Number.Range(TabMode + 1, 0, 3));
+            else if (Input.GetKeyDown(KeyCode.LeftArrow))
+                Clickedタブボタン(Number.Range(TabMode - 1, 0, 3));
+            else if (Input.GetKeyDown(KeyCode.DownArrow))
+                Clickedスクロールボタン(-1);
+            else if (Input.GetKeyDown(KeyCode.UpArrow))
+                Clickedスクロールボタン(1);
+        }
+        else if (精算画面.activeSelf==true && 精算終了確認.activeSelf== false && 終了確認画面.activeSelf == false)//精算画面
+        {
+            注文ボタン.interactable = false;
+            if (!割引画面.activeSelf)
+            {
+                現金 = NumPadKey.Value;
+                精算画面.transform.Find("現金").Find("Text").GetComponent<Text>().text = Number.MarkDecimal(現金) + " 円";
+                精算画面.transform.Find("内税").GetComponent<Text>().text = "内税 " + Number.MarkDecimal(Number.InsideTax(注文情報取得().Price - 割引額, GetComponent<DataLoader>().LoadConfig().Tax)) + " 円";
+            }
+
+            お釣り.text = Number.MarkDecimal(現金 - (注文情報取得().Price - 割引額)) + " 円";
+            if(現金 - (注文情報取得().Price - 割引額) < 0)
+            {
+                お釣り.color = new Color(1f, 0f, 0f, 1f);
+            }
+            else
+            {
+                お釣り.color = new Color(0f, 0f, 0f, 1f);
+            }
+
+            if(現金 - (注文情報取得().Price - 割引額) >= 0)
+            {
+                注文確定ボタン.interactable = true;
+            }
+            else
+            {
+                注文確定ボタン.interactable = false;
+            }
+
+            if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
+                Numpad.GetComponent<NumPadKey>().KeyPressed("1");
+            else if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
+                Numpad.GetComponent<NumPadKey>().KeyPressed("2");
+            else if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
+                Numpad.GetComponent<NumPadKey>().KeyPressed("3");
+            else if (Input.GetKeyDown(KeyCode.Alpha4) || Input.GetKeyDown(KeyCode.Keypad4))
+                Numpad.GetComponent<NumPadKey>().KeyPressed("4");
+            else if (Input.GetKeyDown(KeyCode.Alpha5) || Input.GetKeyDown(KeyCode.Keypad5))
+                Numpad.GetComponent<NumPadKey>().KeyPressed("5");
+            else if (Input.GetKeyDown(KeyCode.Alpha6) || Input.GetKeyDown(KeyCode.Keypad6))
+                Numpad.GetComponent<NumPadKey>().KeyPressed("6");
+            else if (Input.GetKeyDown(KeyCode.Alpha7) || Input.GetKeyDown(KeyCode.Keypad7))
+                Numpad.GetComponent<NumPadKey>().KeyPressed("7");
+            else if (Input.GetKeyDown(KeyCode.Alpha8) || Input.GetKeyDown(KeyCode.Keypad8))
+                Numpad.GetComponent<NumPadKey>().KeyPressed("8");
+            else if (Input.GetKeyDown(KeyCode.Alpha9) || Input.GetKeyDown(KeyCode.Keypad9))
+                Numpad.GetComponent<NumPadKey>().KeyPressed("9");
+            else if (Input.GetKeyDown(KeyCode.Alpha0) || Input.GetKeyDown(KeyCode.Keypad0))
+                Numpad.GetComponent<NumPadKey>().KeyPressed("0");
+            else if (Input.GetKeyDown(KeyCode.Clear))
+                Numpad.GetComponent<NumPadKey>().KeyPressed("Clear");
+            else if (Input.GetKeyDown(KeyCode.Delete) || Input.GetKeyDown(KeyCode.Backspace))
+                Numpad.GetComponent<NumPadKey>().KeyPressed("Del");
+            else if (Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Return))
+                Clicked注文確定ボタン();
+            else if (Input.GetKeyDown(KeyCode.Escape))
+                Clicked注文キャンセルボタン();
+
+        }
+        else if (精算終了確認.activeSelf == true)
+        {
+            if (Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Return))
+                Clicked精算終了確認ボタン();
+            else if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Delete) || Input.GetKeyDown(KeyCode.Backspace))
+                Clicked精算終了確認中止ボタン();
         }
     }
 
-    private string LintNumber(int num)
-    {
-        if (num < 10)
-        {
-            return "0" + num.ToString();
-        }
-        else
-        {
-            return num.ToString();
-        }
-    }
-
-    public void TabButtonClicked(int num)
+    public void Clickedタブボタン(int num)
     {
         TabMode = num;
-        for (int i = 0; i < 6; i++)
+        Page = 0;
+        商品ボタン表示();
+    }
+
+    public void Clickedスクロールボタン(int mode)
+    {
+        if (mode > 0)
         {
-            OrderButton.transform.Find((i+1).ToString()).gameObject.GetComponent<OrderButton>().TabChanged(TabMode, i + 1);
+            if(ScrollButtonUp.interactable == true)
+                Page = Page - 1;
         }
-        for(int i=0; i<4; i++)
+        else if(mode<0)
         {
-            Tabs.transform.Find((i+1).ToString()).gameObject.GetComponent<Button>().interactable = true;
+            if (ScrollButtonDown.interactable == true)
+                Page = Page + 1;
         }
-        Tabs.transform.Find((num+1).ToString()).gameObject.GetComponent<Button>().interactable = false;
+        Page = Number.Range(Page, 0, MaxPage[TabMode]);
+        商品ボタン表示();
     }
 
-    public void AddOrder(int _TabMode, int num)
+    public void 商品ボタン表示()
     {
-        if (!OrderConfirmUI.activeSelf && !OrderCheckWindow.activeSelf)
-        {
-            orderList.Add(productList, _TabMode, num);
-            GetComponent<OrderListComponent>().UpdateList(orderList);
-            PriceUI.text = MarkDecimal(orderList.Price) + " 円";
-        }
-    }
-
-    public void RemoveOrder(int _TabMode, int num)
-    {
-        if (!OrderConfirmUI.activeSelf && !OrderCheckWindow.activeSelf)
-        {
-            orderList.Remove(productList, _TabMode, num);
-            GetComponent<OrderListComponent>().UpdateList(orderList);
-            PriceUI.text = MarkDecimal(orderList.Price) + " 円";
-        }
-    }
-
-    public void UpButtonClicked()
-    {
-        OrderListComponent.UpperNumber -= 1;
-        GetComponent<OrderListComponent>().UpdateList(orderList);
-    }
-
-    public void DownButtonClicked()
-    {
-        OrderListComponent.UpperNumber += 1;
-        GetComponent<OrderListComponent>().UpdateList(orderList);
-    }
-
-    public void OrderButtonClicked()
-    {
-        OrderConfirmUI.SetActive(true);
-        OrderSubmitButton.GetComponent<Button>().interactable = false;
-        ProductAmountUI.text = "計 " + orderList.OverallAmount.ToString() +"点";
-        InsideTax.text = "内税 " + (orderList.Price * Tax / (Tax+100)).ToString() +" 円";
-    }
-
-    public void OrderCancelButtonClicked()
-    {
-        OrderCancelButton.transform.parent.Find("現金").Find("Text").GetComponent<Text>().text = "0 円";
-        OrderCancelButton.transform.parent.Find("釣銭").Find("Text").GetComponent<Text>().text = "0 円";
-        OrderConfirmUI.SetActive(false);
-        OrderSubmitButton.GetComponent<Button>().interactable = true;
-
-    }
-
-    public void OrderConfirmButtonClicked()
-    {
-        if ((int.Parse(CashUI.text.Substring(0, CashUI.text.Length - 2).Replace(",", "")) - orderList.Price >= 0)){
-            OrderCheckWindow.SetActive(true);
-            OrderConfirmButtonCover.SetActive(true);
-            OrderSubmitButton.GetComponent<Button>().interactable = true;
-            OrderCheckWindow.transform.Find("ウィンドウ").Find("現金").Find("Text").GetComponent<Text>().text = CashUI.text;
-            OrderCheckWindow.transform.Find("ウィンドウ").Find("釣銭").Find("Text").GetComponent<Text>().text = ChangeUI.text;
-
-        }
-        else
-        {
-            OrderConfirmButtonCover.SetActive(true);
-        }
-    }
-
-    public void CompleteOrder()
-    {
+        Transform[] Button = new Transform[6];
         
-        orderList.Cash = int.Parse(CashUI.text.Substring(0, CashUI.text.Length - 2).Replace(",", ""));
+        for(int i = 0; i<6; i++)
+        {
+            Button[i] = 商品ボタン.transform.Find((i + 1).ToString());
+            DataLoader.List[] ListEachCategory = ProductList.各カテゴリーのリスト取得(productList, TabMode).ToArray(); ;
+
+            if (i + Page * 3 < ProductList.各カテゴリーの商品数取得(productList, TabMode))
+            {
+                Button[i].gameObject.SetActive(true);
+                if (ListEachCategory[i + 3 * Page].Available)
+                {
+                    Button[i].GetComponent<Button>().interactable = true;
+                }
+                else
+                {
+                    Button[i].GetComponent<Button>().interactable = false;
+                }
+
+                string dir = "image/" + ListEachCategory[i+Page*3].ImagePath;
+                if (GetComponent<DataLoader>().checkExist(dir))
+                {
+                    RawImage img = Button[i].Find("RawImage").GetComponent<RawImage>();
+                    byte[] bytes = File.ReadAllBytes(dir);
+                    Texture2D texture = new Texture2D(500, 500);
+                    texture.LoadImage(bytes);
+                    img.texture = texture;
+                    img.color = new Color(1f, 1f, 1f, 1f);
+                }
+                else
+                {
+                    RawImage img = Button[i].Find("RawImage").GetComponent<RawImage>();
+                    img.texture = null;
+                    img.color = new Color(100f / 255f, 100f / 255f, 100f / 255f, 1f);
+                }
+
+                Button[i].Find("Text").GetComponent<Text>().text = ListEachCategory[i + 3 * Page].Name;
+                Button[i].Find("Price").GetComponent<Text>().text = Number.MarkDecimal(ListEachCategory[i + 3 * Page].Price) + " 円";
+
+            }
+            else
+            {
+                Button[i].gameObject.SetActive(false);
+            }
+        }
+
+        商品ボタン.transform.Find("Place").GetComponent<Text>().text = (Page + 1).ToString() + " / " + (MaxPage[TabMode] + 1).ToString();
+    }
+
+    public void 注文履歴一括削除()
+    {
+        var clones = GameObject.FindGameObjectsWithTag("OrderList");
+        orderList.Clear();
+        foreach (var clone in clones)
+        {
+            Destroy(clone);
+        }
+    }
+
+    public void 注文追加(int ButtonNumber)
+    {
+        if (商品ボタン.transform.Find((ButtonNumber + 1).ToString()).gameObject.activeSelf) {
+            int _tab = TabMode;
+            int _num = ButtonNumber + 3 * Page;
+            DataLoader.List[] _list = ProductList.各カテゴリーのリスト取得(productList, _tab).ToArray();
+            int count = 0;
+            bool flag = false;
+            OrderList tempRecord = new OrderList();
+            foreach (OrderList record in orderList)
+            {
+                if (record.Category == _tab && record.Number == _num)
+                {
+                    flag = true;
+                    tempRecord = record;
+                    break;
+                }
+                count++;
+            }
+
+            if (_list[_num].Available)
+            {
+                if (flag) //orderList内に存在
+                {
+                    tempRecord.Amount += 1;
+                    tempRecord.Price = _list[_num].Price * tempRecord.Amount;
+                    注文履歴.transform.Find(count.ToString()).Find("Amount").GetComponent<Text>().text = "数量 " + tempRecord.Amount.ToString();
+                    注文履歴.transform.Find(count.ToString()).Find("Price").GetComponent<Text>().text = "￥ " + Number.MarkDecimal(_list[_num].Price * tempRecord.Amount);
+                    orderList[count] = tempRecord;
+                    小計金額.text = Number.MarkDecimal(注文情報取得().Price) + " 円";
+                }
+                else //orderList内に存在しない
+                {
+                    int i = 0;
+                    while (注文履歴.transform.Find(i.ToString()) != false)
+                    {
+                        i++;
+                    }
+                    GameObject temp = Instantiate(注文履歴ボタンPrefab, 注文履歴.transform);
+                    temp.name = i.ToString();
+                    temp.transform.Find("ProductName").GetComponent<Text>().text = _list[_num].Name;
+                    temp.transform.Find("Price").GetComponent<Text>().text = "￥ " + Number.MarkDecimal(_list[_num].Price);
+                    temp.transform.Find("Amount").GetComponent<Text>().text = "数量 1";
+                    orderList.Add(new OrderList { Name = _list[_num].Name, Category = _list[_num].Category, Number = _num, Amount = 1, Price = _list[_num].Price });
+                    小計金額.text = Number.MarkDecimal(注文情報取得().Price) + " 円";
+                }
+            }
+        }
+    }
+
+    public void 注文削除(int _indexNum)
+    {
+        if (orderList[_indexNum].Amount == 1)
+        {
+            Destroy(注文履歴.transform.Find(_indexNum.ToString()).gameObject);
+            int i = _indexNum + 1;
+            while (注文履歴.transform.Find(i.ToString()) != false)
+            {
+                注文履歴.transform.Find(i.ToString()).gameObject.name = (i - 1).ToString();
+                i++;
+            }
+            orderList.RemoveAt(_indexNum);
+            小計金額.text = Number.MarkDecimal(注文情報取得().Price) + " 円";
+        }
+        else if (orderList[_indexNum].Amount > 1)
+        {
+            OrderList tempRecord = orderList[_indexNum];
+            tempRecord.Price -= tempRecord.Price / tempRecord.Amount;
+
+            tempRecord.Amount -= 1;
+            注文履歴.transform.Find(_indexNum.ToString()).Find("Amount").GetComponent<Text>().text = "数量 " + tempRecord.Amount.ToString();
+            注文履歴.transform.Find(_indexNum.ToString()).Find("Price").GetComponent<Text>().text = "￥ " + Number.MarkDecimal(tempRecord.Price);
+            orderList[_indexNum] = tempRecord;
+            小計金額.text = Number.MarkDecimal(注文情報取得().Price) + " 円";
+        }
+    }
+
+    public OrderList 注文情報取得()
+    {
+        OrderList res = new OrderList();
+        foreach(OrderList record in orderList)
+        {
+            res.Price += record.Price;
+            res.Amount += record.Amount;
+        }
+        return res;
+    }
+
+    public void Clicked注文ボタン()
+    {
+        if (注文情報取得().Amount > 0)
+        {
+            割引画面.SetActive(false);
+            精算画面.SetActive(true);
+            現金 = 0;
+            割引額 = 0;
+
+            精算画面.transform.Find("商品数").Find("Text").GetComponent<Text>().text = "計 " + 注文情報取得().Amount.ToString() + " 点";
+            精算画面.transform.Find("現金").Find("Text").GetComponent<Text>().text = Number.MarkDecimal(現金) + " 円";
+            精算画面.transform.Find("合計金額").Find("Text").GetComponent<Text>().text = Number.MarkDecimal(注文情報取得().Price) + " 円";
+            精算画面.transform.Find("内税").GetComponent<Text>().text = "内税 " + Number.MarkDecimal(Number.InsideTax(注文情報取得().Price - 割引額, GetComponent<DataLoader>().LoadConfig().Tax)) + " 円";
+            精算画面.transform.Find("割引").GetComponent<Text>().text = "割引 " + Number.MarkDecimal(割引額) + " 円";
+            NumPadKey.数値上限設定(10000000);
+            NumPadKey.対象切り替え(精算画面.transform.Find("現金").Find("Text").GetComponent<Text>());
+        }
+    }
+
+    public void Clicked注文確定ボタン()
+    {
+        if (現金 - (注文情報取得().Price - 割引額) >= 0)
+        {
+            精算終了確認.SetActive(true);
+            精算終了確認.transform.Find("ウィンドウ").Find("現金").Find("Text").GetComponent<Text>().text = Number.MarkDecimal(現金) + " 円";
+            精算終了確認.transform.Find("ウィンドウ").Find("釣銭").Find("Text").GetComponent<Text>().text = Number.MarkDecimal(現金 - (注文情報取得().Price - 割引額)) + " 円";
+        }
+    }
+
+    public void Clicked注文キャンセルボタン()
+    {
+        割引画面.SetActive(false);
+        精算画面.SetActive(false);
+    }
+
+    public void Clicked割引ボタン()
+    {
+        割引画面.SetActive(true);
+        NumPadKey.数値上限設定(注文情報取得().Price + 1);
+        NumPadKey.対象切り替え(割引画面.transform.Find("割引額").Find("Text").GetComponent<Text>());
+    }
+
+    public void Clicked割引金額ボタン(float 割引率)
+    {
+        割引画面.transform.Find("割引額").Find("Text").GetComponent<Text>().text = Number.MarkDecimal((int)(注文情報取得().Price * 割引率)) + " 円";
+        NumPadKey.対象切り替え(割引画面.transform.Find("割引額").Find("Text").GetComponent<Text>());
+    }
+
+    public void Clicked割引決定ボタン()
+    {
+        割引額 = NumPadKey.Value;
+        精算画面.transform.Find("割引").GetComponent<Text>().text = "割引 " + Number.MarkDecimal(割引額) + " 円";
+        精算画面.transform.Find("合計金額").Find("Text").GetComponent<Text>().text = Number.MarkDecimal(注文情報取得().Price - 割引額) + " 円";
+        NumPadKey.数値上限設定(10000000);
+        NumPadKey.対象切り替え(精算画面.transform.Find("現金").Find("Text").GetComponent<Text>());
+        割引画面.SetActive(false);
+    }
+
+    public void Clicked精算終了確認ボタン()
+    {
         DateTime time = DateTime.Now;
-        Directory.CreateDirectory("data/receipt/logs/" + time.ToString("yyyyMMdd"));
-        int cnt = 1;
+
+        int cnt = 0;
         while (true)
         {
-            if (!GetComponent<DataLoader>().checkExist(@"data/receipt/logs/" + time.ToString("yyyyMMdd") + "/" + cnt.ToString() + ".json"))
-            {
+            if (!GetComponent<DataLoader>().checkExist("data/order/" + time.ToString("yyyyMMdd") + "/" + cnt.ToString() + ".csv"))
                 break;
-            }
             cnt++;
         }
-        GenerateReceipt(orderList, cnt, time);
+        Directory.CreateDirectory(@"data/order/" + time.ToString("yyyyMMdd"));
+        var path = @"data/order/"+ time.ToString("yyyyMMdd") + "/" + cnt.ToString() + ".csv";
 
-        for (int i = 0; i < 24; i++)
+        using (TextWriter fileWriter = new StreamWriter(path, true))
+        using (var csv = new CsvHelper.CsvWriter(fileWriter, System.Globalization.CultureInfo.InvariantCulture))
         {
-            if (orderList.Number[i] != -1)
-            {
-                int _tabmode = orderList.TabMode[i];
-                int _num = orderList.Number[i] - 1;
-                productList.Sales[_tabmode][_num] += orderList.Amount[i];
-                if (productList.Stock[_tabmode][_num] != -1)
-                {
-                    productList.Stock[_tabmode][_num] -= orderList.Amount[i];
-                }
-                GetComponent<DataLoader>().SaveList(productList);
-            }
+            csv.Configuration.HasHeaderRecord = true;
+            csv.Configuration.RegisterClassMap<OrderListMapper>();
+            csv.WriteRecords(orderList);
         }
-        GetComponent<DataLoader>().AddPayment(orderList.Price, "商品購入-" + time.ToString("yyyyMMdd")+cnt, false);
 
-        orderList.Reset();
-        GetComponent<OrderListComponent>().UpdateList(orderList);
-        PriceUI.text = MarkDecimal(orderList.Price) + " 円";
+        GenerateReceipt(orderList, cnt, time);
+        GetComponent<DataLoader>().AddPayment(注文情報取得().Price - 割引額, "商品購入-" + time.ToString("yyyyMMdd") + cnt.ToString(), false);
+        orderList.Clear();
+        foreach (GameObject record in GameObject.FindGameObjectsWithTag("OrderList"))
+        {
+            Destroy(record);
+        }
 
-        CashUI.text = "0 円";
-        ChangeUI.text = "0 円";
-        OrderCheckWindow.SetActive(false);
-        OrderConfirmUI.SetActive(false);
+        精算終了確認.SetActive(false);
+        割引画面.SetActive(false);
+        精算画面.SetActive(false);
+        小計金額.text = Number.MarkDecimal(注文情報取得().Price) + " 円";
     }
 
-    public void GenerateReceipt(OrderList _list, int cnt, DateTime time)
+    public void Clicked精算終了確認中止ボタン()
+    {
+        精算終了確認.SetActive(false);
+    }
+
+    public void GenerateReceipt(List<OrderList> _list, int cnt, DateTime time)
     {
         DataLoader c = GetComponent<DataLoader>();
-        
-        string FilenameJson = "data/receipt/logs/" + time.ToString("yyyyMMdd") +"/"+cnt.ToString()+ ".json";
-
-        c.saveFile(@FilenameJson, JsonMapper.ToJson(_list));
+        int Tax = GetComponent<DataLoader>().LoadConfig().Tax;
 
         List<string> Text = new List<string>();
         Text.Add(StoreName);
         Text.Add("");
         Text.Add(time.ToString("yyyy年MM月dd日 HH時mm分ss秒"));
         Text.Add("-----------------------------");
-        for(int i=0; i<24; i++)
+        foreach (OrderList record in _list)
         {
-            if (_list.Number[i] != -1 )
-            {
-                int _tabmode = _list.TabMode[i];
-                int _num = _list.Number[i] - 1;
-                Text.Add(productList.ProductName[_tabmode][_num]+ new String('　', 12- productList.ProductName[_tabmode][_num].Length)+"￥"+ BiggerNumberStr(MarkDecimal(productList.Price[_tabmode][_num]*orderList.Amount[i])));
-                Text.Add("　　　￥" +productList.Price[_tabmode][_num] + "　　　@" + BiggerNumberStr(MarkDecimal(orderList.Amount[i])));
-            }
+            Text.Add(record.Name + new String('　', 12 - record.Name.Length) + Number.MarkDecimal(record.Price) + "　円");
+            Text.Add("　　　" + (record.Price / record.Amount)+ "　@　" + Number.MarkDecimal(record.Amount) + "　円");
         }
-        Text.Add("小　計／" + BiggerNumber(orderList.OverallAmount) + "点"+ new String('　', 5+ orderList.OverallAmount.ToString().Length) + "￥" + BiggerNumberStr(MarkDecimal(orderList.Price)));
+        Text.Add("小　計／" + 注文情報取得().Amount + "点" + new String('　', 5 + 注文情報取得().Amount.ToString().Length) + Number.MarkDecimal(注文情報取得().Price) + " 円");
         Text.Add("");
         Text.Add("-----------------------------");
-        Text.Add("合　計   ￥" + BiggerNumberStr(MarkDecimal(orderList.Price)));
-        Text.Add("内　税   ￥" + BiggerNumberStr(MarkDecimal(orderList.Price * Tax / (100 + Tax))));
-        Text.Add("お預り   ￥" + BiggerNumberStr(CashUI.text.Substring(0, CashUI.text.Length - 2)));
-        Text.Add("お釣り   ￥" + BiggerNumberStr(ChangeUI.text.Substring(0, ChangeUI.text.Length - 2)));
+        if(割引額!=0)
+            Text.Add("割　引   " + Number.MarkDecimal(割引額) + "　円");
+        Text.Add("合　計   " + Number.MarkDecimal(注文情報取得().Price - 割引額) + "　円");
+        Text.Add("内　税   " + Number.MarkDecimal(Number.InsideTax(注文情報取得().Price - 割引額, Tax)) + "　円");
+        Text.Add("お預り   " + Number.MarkDecimal(現金) + "　円");
+        Text.Add("お釣り   " + Number.MarkDecimal(現金 - (注文情報取得().Price - 割引額)) + "　円");
         Text.Add("");
         Text.Add("上記正に領収いたしました");
-        Text.Add("   伝票番号 " + time.ToString("yyyyMMdd_HHmmss")+"(" + cnt.ToString() + ")");
+        Text.Add("   伝票番号 " + time.ToString("yyyyMMdd_HHmmss") + "(" + cnt.ToString() + ")");
         Text.Add("");
         Text.Add("-----------------------------");
         Text.Add("お買い上げ、ありがとうございました。");
         Text.Add("またのご来店をお待ちしております。");
 
         GetComponent<Receipt>().GenerateReceipt(Text, GetComponent<DataLoader>().LoadConfig().LINENotifyPurchaseNotice);
-    }
-
-    public string MarkDecimal(int _price)
-    {
-        if (_price < 1000)
-        {
-            return _price.ToString();
-        }
-        else
-        {
-            string text = _price.ToString();
-            string ret = "";
-            int count = 0;
-            for(int i=0; i<text.Length; i++)
-            {
-                ret = text.Substring(text.Length - i - 1, 1) + ret;
-                count++;
-                if (count == 3 && i!=text.Length -1)
-                {
-                    ret = "," + ret;
-                    count = 0;
-                }
-            }
-
-            return ret;
-        }
-    }
-
-    public string BiggerNumber(int num)
-    {
-        /*
-        string ret = "";
-        for(int i=0; i<num.ToString().Length; i++)
-        {
-            switch(num.ToString().Substring(i, 1))
-            {
-                case "0":
-                    ret += "０";
-                    break;
-                case "1":
-                    ret += "１";
-                    break;
-                case "2":
-                    ret += "２";
-                    break;
-                case "3":
-                    ret += "３";
-                    break;
-                case "4":
-                    ret += "４";
-                    break;
-                case "5":
-                    ret += "５";
-                    break;
-                case "6":
-                    ret += "６";
-                    break;
-                case "7":
-                    ret += "７";
-                    break;
-                case "8":
-                    ret += "８";
-                    break;
-                case "9":
-                    ret += "９";
-                    break;
-            }
-        }
-        return ret;
-        */
-        return num.ToString();
-    }
-
-    public string BiggerNumberStr(string num)
-    {
-        /*
-        string ret = "";
-        for (int i = 0; i < num.Length; i++)
-        {
-            switch (num.Substring(i, 1))
-            {
-                case "0":
-                    ret += "０";
-                    break;
-                case "1":
-                    ret += "１";
-                    break;
-                case "2":
-                    ret += "２";
-                    break;
-                case "3":
-                    ret += "３";
-                    break;
-                case "4":
-                    ret += "４";
-                    break;
-                case "5":
-                    ret += "５";
-                    break;
-                case "6":
-                    ret += "６";
-                    break;
-                case "7":
-                    ret += "７";
-                    break;
-                case "8":
-                    ret += "８";
-                    break;
-                case "9":
-                    ret += "９";
-                    break;
-                case ",":
-                    ret += "，";
-                    break;
-                default:
-                    ret += num.Substring(i, 1);
-                    break;
-            }
-        }
-        return ret;
-        */
-        return num;
-    }
-
-    private int Range(int num, int min, int max)
-    {
-        if (num > max)
-        {
-            num = min;
-        }else if (num<min)
-        {
-            num = max;
-        }
-        return num;
     }
 }

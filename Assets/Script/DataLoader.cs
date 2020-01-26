@@ -1,8 +1,10 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 using System.IO;
 using System;
 using System.Text;
 using LitJson;
+using CsvHelper;
 
 public class DataLoader : MonoBehaviour
 {
@@ -10,6 +12,7 @@ public class DataLoader : MonoBehaviour
     public class Config
     {
         public string StoreName  = "テストストア";
+        public string[] TabName = new string[4] { "Tab1", "Tab2", "Tab3", "Tab4"};
         public int Tax = 10;
         public string Encoding = "Shift_JIS";
         public int ScreenResolutionWidth = 1920;
@@ -43,43 +46,73 @@ public class DataLoader : MonoBehaviour
     //商品リスト
     public class List
     {
-        public List()
-        {
-            for (int i = 0; i < 4; i++) {
-                ProductName[i] = new string[MAX_PRODUCT_AMOUNT];
-                Price[i] = new int[MAX_PRODUCT_AMOUNT];
-                Stock[i] = new int[MAX_PRODUCT_AMOUNT];
-                Sales[i] = new int[MAX_PRODUCT_AMOUNT];
-                Available[i] = new bool[MAX_PRODUCT_AMOUNT];
-            }
-        }
+        public int Category { get; set; }
+        public string Name { get; set; }
+        public int Price { get; set; }
+        public int Stock { get; set; }
+        public bool Available { get; set; }
+        public string ImagePath { get; set; }
+        public string ID { get; set; }
+    }
 
-        public int MAX_PRODUCT_AMOUNT = 6;
-        public string[] CategoryName = { "TabA", "TabB", "TabC", "TabD"};
-        public string[][] ProductName = new string[4][];
-        public int[][] Price = new int[4][];
-        public int[][] Stock = new int[4][];
-        public int[][] Sales = new int[4][];
-        public bool[][] Available = new bool[4][];
-    }
-    public bool SaveList(List _list)
+    public class ListMapper : CsvHelper.Configuration.ClassMap<DataLoader.List>
     {
-        return saveFile(@"list.json", JsonMapper.ToJson(_list));
+        public ListMapper()
+        {
+            Map(x => x.Category).Index(0);
+            Map(x => x.Name).Index(1);
+            Map(x => x.Price).Index(2);
+            Map(x => x.Stock).Index(3);
+            Map(x => x.Available).Index(4);
+            Map(x => x.ImagePath).Index(5);
+            Map(x => x.ID).Index(6);
+        }
     }
-    public List LoadList()
+
+    public static void SaveList(List<List> _list)
     {
-        string json = loadFile(@"list.json");
-        List temp;
-        try
+        var path = @"list.csv";
+
+        using (TextWriter fileWriter = new StreamWriter(path, true))
+        using (var csv = new CsvHelper.CsvWriter(fileWriter, System.Globalization.CultureInfo.InvariantCulture))
         {
-            temp = JsonMapper.ToObject<List>(json);
+            csv.Configuration.HasHeaderRecord = true;
+            csv.Configuration.RegisterClassMap<ListMapper>();
+            csv.WriteRecords(_list);
         }
-        catch (Exception e)
+    }
+
+    public static List<List> LoadList()
+    {
+        var path = @"list.csv";
+        var result = new List<List>();
         {
-            Debug.LogWarning(e.Message);
-            return null;
+            using (TextReader fileReader = File.OpenText(path))
+            {
+                using (var csv = new CsvReader(fileReader, System.Globalization.CultureInfo.InvariantCulture))
+                {
+                    csv.Configuration.HasHeaderRecord = true;
+                    csv.Configuration.RegisterClassMap<ListMapper>();
+                    csv.Read();
+                    csv.ReadHeader();
+                    while (csv.Read())
+                    {
+                        var record = new List
+                        {
+                            Category = int.Parse(csv.GetField("Category")),
+                            Name = csv.GetField("Name"),
+                            Price = int.Parse(csv.GetField("Price")),
+                            Stock = int.Parse(csv.GetField("Stock")),
+                            Available = bool.Parse(csv.GetField("Available")),
+                            ImagePath = csv.GetField("ImagePath"),
+                            ID = csv.GetField("ID")
+                        };
+                        result.Add(record);
+                    }
+                }
+            }
+            return result;
         }
-        return temp;
     }
 
     public class Payment
@@ -185,29 +218,6 @@ public class DataLoader : MonoBehaviour
         }
 
         saveFile("data/payment/" + count.ToString() + ".json", JsonMapper.ToJson(temp));
-    }
-
-    public GameManager.OrderList LoadOrderList(string date, int num)
-    {
-        if (checkExist("data/receipt/logs/" + date + "/" + num.ToString() + ".json"))
-        {
-            string json = loadFile("data/receipt/logs/" + date + "/"+ num.ToString() + ".json");
-            GameManager.OrderList temp;
-            try
-            {
-                temp = JsonMapper.ToObject<GameManager.OrderList>(json);
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning(e.Message);
-                return null;
-            }
-            return temp;
-        }
-        else
-        {
-            return new GameManager.OrderList();
-        }
     }
 
     public bool saveFile(string Filename, string text)

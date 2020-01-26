@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 #if USE_JAGGED
 [System.Serializable]
@@ -25,18 +26,10 @@ public class FrontSceneChange : MonoBehaviour
         Name = cfg.StoreName;
         Screen.SetResolution(cfg.ScreenResolutionWidth, cfg.ScreenResolutionHeight, cfg.FullScreen);
 
-        if (GetComponent<DataLoader>().checkExist(@"list.json") == false)
+        if (!GetComponent<DataLoader>().checkExist(@"list.csv"))
         {
-            DataLoader.List temp = new DataLoader.List();
-            for(int i = 0; i < 4; i++)
-            {
-                for(int j=0; j< temp.MAX_PRODUCT_AMOUNT; j++)
-                {
-                    temp.ProductName[i][j] = "";
-                }
-            }
-            GetComponent<DataLoader>().SaveList(temp);
-
+            var temp = new List<DataLoader.List>();
+            DataLoader.SaveList(temp);
         }
 
         StoreName.text = Name + " 管理画面";

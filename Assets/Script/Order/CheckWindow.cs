@@ -6,13 +6,34 @@ using DG.Tweening;
 
 public class CheckWindow : MonoBehaviour
 {
+    Sequence fadeIn;
     public Image Panel;
     public GameObject Window;
+    public string scene;
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Return)) 
+        {
+            if (scene == "")
+            {
+                QuitGame();
+            }
+            else
+            {
+                Quit();
+            }
+        }
+        else if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Delete) || Input.GetKeyDown(KeyCode.Backspace))
+        {
+            Back();
+        }
+    }
 
     public void WindowAwake()
     {
         gameObject.SetActive(true);
-        Sequence fadeIn = DOTween.Sequence();
+        fadeIn = DOTween.Sequence();
         for (int i = 0; i < 4; i++)
         {
             fadeIn.Insert(0,
@@ -51,7 +72,7 @@ public class CheckWindow : MonoBehaviour
         fadeOut.Play();
     }
 
-    public void Quit(string scene)
+    public void Quit()
     {
         gameObject.SetActive(false);
         GetComponent<SceneLoader>().LoadScene(scene);
