@@ -17,8 +17,9 @@ public class Number : MonoBehaviour
         }
     }
 
-    public static string MarkDecimal(int _price)
+    public static string MarkDecimal(int price)
     {
+        int _price = price;
         if (_price < 1000 && _price >=0)
         {
             return _price.ToString();
@@ -61,6 +62,73 @@ public class Number : MonoBehaviour
         }
     }
 
+    public static string MarkDecimal(string price)
+    {
+        int _price;
+        try
+        {
+            _price = int.Parse(price);
+        }
+        catch(System.Exception)
+        {
+            _price = 0;
+        }
+
+        if (_price < 1000 && _price >= 0)
+        {
+            return _price.ToString();
+        }
+        else if (_price >= 1000)
+        {
+            string text = _price.ToString();
+            string ret = "";
+            int count = 0;
+            for (int i = 0; i < text.Length; i++)
+            {
+                ret = text.Substring(text.Length - i - 1, 1) + ret;
+                count++;
+                if (count == 3 && i != text.Length - 1)
+                {
+                    ret = "," + ret;
+                    count = 0;
+                }
+            }
+
+            return ret;
+        }
+        else
+        {
+            string text = (-_price).ToString();
+            string ret = "";
+            int count = 0;
+            for (int i = 0; i < text.Length; i++)
+            {
+                ret = text.Substring(text.Length - i - 1, 1) + ret;
+                count++;
+                if (count == 3 && i != text.Length - 1)
+                {
+                    ret = "," + ret;
+                    count = 0;
+                }
+            }
+
+            return "- " + ret;
+        }
+    }
+
+    public static bool CheckNumber(string num)
+    {
+        try
+        {
+            double temp = double.Parse(num);
+        }
+        catch (System.Exception)
+        {
+            return false;
+        }
+        return true;
+    }
+
     public static int Range(int num, int min, int max)
     {
         int res = num;
@@ -80,4 +148,15 @@ public class Number : MonoBehaviour
         return price * tax / (100 + tax);
     }
 
+    public static int ToNumber(string Number)
+    {
+        if (CheckNumber(Number))
+        {
+            return int.Parse(Number);
+        }
+        else
+        {
+            return 0;
+        }
+    }
 }

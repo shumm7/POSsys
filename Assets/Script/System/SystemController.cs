@@ -25,10 +25,12 @@ public class SystemController : MonoBehaviour
         SettingsForm.transform.Find("EnableLINENotify").GetComponent<Toggle>().isOn = temp.EnableLINENotify;
         SettingsForm.transform.Find("LINENotifyToken").GetComponent<InputField>().text = temp.LINENotifyToken;
         SettingsForm.transform.Find("LINENotifyPurchaseNotice").GetComponent<Toggle>().isOn = temp.LINENotifyPurchaseNotice;
+        SettingsForm.transform.Find("BarcodeReader").GetComponent<Toggle>().isOn = temp.BarcodeReader;
+        SettingsForm.transform.Find("BarcodeReaderTimeOut").GetComponent<InputField>().text = temp.BarcodeReaderTimeOut.ToString();
 
     }
 
-    public void saveSettingsDaa()
+    public void saveSettingsData()
     {
         DataLoader.Config temp = GetComponent<DataLoader>().LoadConfig();
         temp.StoreName = SettingsForm.transform.Find("StoreName").GetComponent<InputField>().text;
@@ -70,6 +72,15 @@ public class SystemController : MonoBehaviour
         temp.EnableLINENotify = SettingsForm.transform.Find("EnableLINENotify").GetComponent<Toggle>().isOn;
         temp.LINENotifyToken = SettingsForm.transform.Find("LINENotifyToken").GetComponent<InputField>().text;
         temp.LINENotifyPurchaseNotice = SettingsForm.transform.Find("LINENotifyPurchaseNotice").GetComponent<Toggle>().isOn;
+        temp.BarcodeReader = SettingsForm.transform.Find("BarcodeReader").GetComponent<Toggle>().isOn;
+        if (SettingsForm.transform.Find("BarcodeReaderTimeOut").GetComponent<InputField>().text != "")
+        {
+            temp.BarcodeReaderTimeOut = double.Parse(SettingsForm.transform.Find("BarcodeReaderTimeOut").GetComponent<InputField>().text);
+        }
+        else
+        {
+            temp.BarcodeReaderTimeOut = 0.1;
+        }
 
         GetComponent<DataLoader>().SaveConfig(temp);
         setSettingsData();

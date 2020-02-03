@@ -21,7 +21,8 @@ public class DataLoader : MonoBehaviour
         public bool EnableLINENotify = false;
         public string LINENotifyToken = "";
         public bool LINENotifyPurchaseNotice = false;
-
+        public bool BarcodeReader = false;
+        public double BarcodeReaderTimeOut = 0.1;
     }
     public bool SaveConfig(Config _config)
     {
@@ -73,7 +74,7 @@ public class DataLoader : MonoBehaviour
     {
         var path = @"list.csv";
 
-        using (TextWriter fileWriter = new StreamWriter(path, true))
+        using (TextWriter fileWriter = new StreamWriter(path, false))
         using (var csv = new CsvHelper.CsvWriter(fileWriter, System.Globalization.CultureInfo.InvariantCulture))
         {
             csv.Configuration.HasHeaderRecord = true;

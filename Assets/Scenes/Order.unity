@@ -7295,6 +7295,7 @@ GameObject:
   - component: {fileID: 1164946988}
   - component: {fileID: 1164946987}
   - component: {fileID: 1164946991}
+  - component: {fileID: 1164946989}
   m_Layer: 0
   m_Name: Controller
   m_TagString: Untagged
@@ -7357,6 +7358,33 @@ MonoBehaviour:
   ScrollButtonUp: {fileID: 885300629}
   ScrollButtonDown: {fileID: 113820109}
   "\u7D42\u4E86\u78BA\u8A8D\u753B\u9762": {fileID: 1783172952}
+--- !u!114 &1164946989
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1164946985}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86100a6b0ea40b449a583351a45b102e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TimeOut: 0.05
+  OnFoundData:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1164946988}
+        m_MethodName: "\u30D0\u30FC\u30B3\u30FC\u30C9\u8AAD\u307F\u53D6\u308A"
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1164946991
 MonoBehaviour:
   m_ObjectHideFlags: 0

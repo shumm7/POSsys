@@ -5,14 +5,44 @@ using UnityEngine.UI;
 
 public class NumPadKey : MonoBehaviour
 {
-    public static Text UI;
+    public static Text TextUI;
+    public static InputField InputFieldUI;
+    static string mode;
     static int Limit = 10000000;
     public static int Value;
 
     public static void 対象切り替え(Text _text)
     {
-        UI = _text;
-        Value = int.Parse(UI.text.Replace(",", "").Replace(" 円", "").Replace("￥ ", ""));
+        TextUI = _text;
+        if (TextUI.text != "")
+        {
+            Value = int.Parse(TextUI.text.Replace(",", "").Replace(" 円", "").Replace("￥ ", ""));
+        }
+        else
+        {
+            Value = 0;
+        }
+        mode = "Text";
+    }
+    public static void 対象切り替え(InputField _text)
+    {
+        InputFieldUI = _text;
+        if (InputFieldUI.text != "")
+        {
+            try
+            {
+                Value = int.Parse(InputFieldUI.text.Replace(",", "").Replace(" 円", "").Replace("￥ ", ""));
+            }
+            catch(System.Exception)
+            {
+                Value = 0;
+            }
+        }
+        else
+        {
+            Value = 0;
+        }
+        mode = "InputField";
     }
 
     public static void 数値上限設定(int _limit)
@@ -71,7 +101,8 @@ public class NumPadKey : MonoBehaviour
         {
             setUI(LintNumber(text) + " 円");
             ret = int.Parse(text);
-            対象切り替え(null);
+            Text vd = null;
+            対象切り替え(vd);
         }
         else if(int.Parse(ButtonName)>=0 && int.Parse(ButtonName)<=9) //数字キー
         {
@@ -96,9 +127,19 @@ public class NumPadKey : MonoBehaviour
 
     private void setUI(string text)
     {
-        if (UI!=null)
+        if (mode == "Text")
         {
-            UI.text = text;
+            if (TextUI != null)
+            {
+                TextUI.text = text;
+            }
+        }
+        else if(mode=="InputField")
+        {
+            if (InputFieldUI != null)
+            {
+                InputFieldUI.text = text;
+            }
         }
     }
 }

@@ -17,6 +17,7 @@ public class GameManager : MonoBehaviour
     int[] MaxPage;
     int 現金;
     int 割引額;
+    bool isBarcodeReader = true;
 
     //GameObject
     public GameObject タブ;
@@ -61,8 +62,11 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         productList = DataLoader.LoadList();
+
         orderList = new List<OrderList>();
         StoreName = GetComponent<DataLoader>().LoadConfig().StoreName;
+        isBarcodeReader = GetComponent<DataLoader>().LoadConfig().BarcodeReader;
+        GetComponent<BarcodeReader>().TimeOut = GetComponent<DataLoader>().LoadConfig().BarcodeReaderTimeOut;
         TabMode = 0;
         Page = 0;
         商品数 = new int[4];
@@ -138,21 +142,23 @@ public class GameManager : MonoBehaviour
                 注文ボタン.interactable = true;
             }
 
-            if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
-                注文追加(0);
-            else if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
-                注文追加(1);
-            else if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
-                注文追加(2);
-            else if (Input.GetKeyDown(KeyCode.Alpha4) || Input.GetKeyDown(KeyCode.Keypad4))
-                注文追加(3);
-            else if (Input.GetKeyDown(KeyCode.Alpha5) || Input.GetKeyDown(KeyCode.Keypad5))
-                注文追加(4);
-            else if (Input.GetKeyDown(KeyCode.Alpha6) || Input.GetKeyDown(KeyCode.Keypad6))
-                注文追加(5);
-            else if (Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Return))
-                Clicked注文ボタン();
-            else if (Input.GetKeyDown(KeyCode.Escape))
+            if (!isBarcodeReader) {
+                if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
+                    注文追加(0);
+                else if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
+                    注文追加(1);
+                else if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
+                    注文追加(2);
+                else if (Input.GetKeyDown(KeyCode.Alpha4) || Input.GetKeyDown(KeyCode.Keypad4))
+                    注文追加(3);
+                else if (Input.GetKeyDown(KeyCode.Alpha5) || Input.GetKeyDown(KeyCode.Keypad5))
+                    注文追加(4);
+                else if (Input.GetKeyDown(KeyCode.Alpha6) || Input.GetKeyDown(KeyCode.Keypad6))
+                    注文追加(5);
+                else if (Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Return))
+                    Clicked注文ボタン();
+            }
+            if (Input.GetKeyDown(KeyCode.Escape))
                 終了確認画面.GetComponent<CheckWindow>().WindowAwake();
             else if (Input.GetKeyDown(KeyCode.RightArrow))
                 Clickedタブボタン(Number.Range(TabMode + 1, 0, 3));
@@ -475,13 +481,19 @@ public class GameManager : MonoBehaviour
         Directory.CreateDirectory(@"data/order/" + time.ToString("yyyyMMdd"));
         var path = @"data/order/"+ time.ToString("yyyyMMdd") + "/" + cnt.ToString() + ".csv";
 
-        using (TextWriter fileWriter = new StreamWriter(path, true))
-        using (var csv = new CsvHelper.CsvWriter(fileWriter, System.Globalization.CultureInfo.InvariantCulture))
+        SaveOrderList(path);
+
+        foreach (var record in orderList)
         {
-            csv.Configuration.HasHeaderRecord = true;
-            csv.Configuration.RegisterClassMap<OrderListMapper>();
-            csv.WriteRecords(orderList);
+            int num = record.Number;
+            if(productList[num].Stock != -1)
+            {
+                var tempList = productList[num];
+                tempList.Stock -= record.Amount;
+                productList[num] = tempList;
+            }
         }
+        DataLoader.SaveList(productList);
 
         GenerateReceipt(orderList, cnt, time);
         GetComponent<DataLoader>().AddPayment(注文情報取得().Price - 割引額, "商品購入-" + time.ToString("yyyyMMdd") + cnt.ToString(), false);
@@ -535,5 +547,70 @@ public class GameManager : MonoBehaviour
         Text.Add("またのご来店をお待ちしております。");
 
         GetComponent<Receipt>().GenerateReceipt(Text, GetComponent<DataLoader>().LoadConfig().LINENotifyPurchaseNotice);
+    }
+
+    public void SaveOrderList(string path)
+    {
+        using (TextWriter fileWriter = new StreamWriter(path, true))
+        using (var csv = new CsvHelper.CsvWriter(fileWriter, System.Globalization.CultureInfo.InvariantCulture))
+        {
+            csv.Configuration.HasHeaderRecord = true;
+            csv.Configuration.RegisterClassMap<OrderListMapper>();
+            csv.WriteRecords(orderList);
+        }
+    }
+
+    public void バーコード読み取り()
+    {
+        string ReadedData = BarcodeReader.Data;
+        foreach (var l in productList)
+        {
+            bool flag = false;
+            int count = 0;
+
+            if (l.ID.Replace(" ", "") == ReadedData)
+            {
+                OrderList tempRecord = new OrderList();
+                foreach (var record in orderList)
+                {
+                    if (record.Number == count)
+                    {
+                        flag = true;
+                        tempRecord = record;
+                        break;
+                    }
+                    count++;
+                }
+
+                if (productList[count].Available)
+                {
+                    if (flag) //orderList内に存在
+                    {
+                        tempRecord.Amount += 1;
+                        tempRecord.Price = productList[count].Price * tempRecord.Amount;
+                        注文履歴.transform.Find(count.ToString()).Find("Amount").GetComponent<Text>().text = "数量 " + tempRecord.Amount.ToString();
+                        注文履歴.transform.Find(count.ToString()).Find("Price").GetComponent<Text>().text = "￥ " + Number.MarkDecimal(productList[count].Price * tempRecord.Amount);
+                        orderList[count] = tempRecord;
+                        小計金額.text = Number.MarkDecimal(注文情報取得().Price) + " 円";
+                    }
+                    else //orderList内に存在しない
+                    {
+                        int i = 0;
+                        while (注文履歴.transform.Find(i.ToString()) != false)
+                        {
+                            i++;
+                        }
+                        GameObject temp = Instantiate(注文履歴ボタンPrefab, 注文履歴.transform);
+                        temp.name = i.ToString();
+                        temp.transform.Find("ProductName").GetComponent<Text>().text = productList[count].Name;
+                        temp.transform.Find("Price").GetComponent<Text>().text = "￥ " + Number.MarkDecimal(productList[count].Price);
+                        temp.transform.Find("Amount").GetComponent<Text>().text = "数量 1";
+                        orderList.Add(new OrderList { Name = productList[count].Name, Category = productList[count].Category, Number = count, Amount = 1, Price = productList[count].Price });
+                        小計金額.text = Number.MarkDecimal(注文情報取得().Price) + " 円";
+                    }
+                }
+            }
+            count++;
+        }
     }
 }
