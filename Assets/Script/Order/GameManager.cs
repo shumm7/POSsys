@@ -5,6 +5,7 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 using LitJson;
+using CsvHelper;
 
 public class GameManager : MonoBehaviour
 {
@@ -46,6 +47,12 @@ public class GameManager : MonoBehaviour
         public int Amount = 0;
         public int Price = 0;
     }
+    public class OrderDataCSVList
+    {
+        public int Year;
+        public int Month;
+        public int Day;
+    }
 
     public class OrderListMapper : CsvHelper.Configuration.ClassMap<OrderList>
     {
@@ -56,6 +63,16 @@ public class GameManager : MonoBehaviour
             Map(x => x.Number).Index(2);
             Map(x => x.Amount).Index(3);
             Map(x => x.Price).Index(4);
+        }
+    }
+
+    public class OrderDataCSVListMapper : CsvHelper.Configuration.ClassMap<OrderDataCSVList>
+    {
+        public OrderDataCSVListMapper()
+        {
+            Map(x => x.Year).Index(0);
+            Map(x => x.Month).Index(1);
+            Map(x => x.Day).Index(2);
         }
     }
 
@@ -481,7 +498,22 @@ public class GameManager : MonoBehaviour
         Directory.CreateDirectory(@"data/order/" + time.ToString("yyyyMMdd"));
         var path = @"data/order/"+ time.ToString("yyyyMMdd") + "/" + cnt.ToString() + ".csv";
 
-        SaveOrderList(path);
+        if (割引額 != 0)
+        {
+            OrderList discount = new OrderList();
+            orderList.Add(discount);
+            discount.Name = "割引";
+            discount.Category = -1;
+            discount.Number = -1;
+            discount.Amount = 1;
+            discount.Price = -割引額;
+            SaveOrderList(path);
+            orderList.Remove(discount);
+        }
+        else
+        {
+            SaveOrderList(path);
+        }
 
         foreach (var record in orderList)
         {
@@ -551,6 +583,47 @@ public class GameManager : MonoBehaviour
 
     public void SaveOrderList(string path)
     {
+        if(path.Substring(path.Length - 5) == "0.csv")
+        {
+            var r = new List<OrderDataCSVList>();
+            if (GetComponent<DataLoader>().checkExist("data/order/order.csv"))
+            {
+                var result = new List<OrderDataCSVList>();
+                {
+                    using (TextReader fileReader = File.OpenText(path))
+                    {
+                        using (var csv = new CsvReader(fileReader, System.Globalization.CultureInfo.InvariantCulture))
+                        {
+                            csv.Configuration.HasHeaderRecord = true;
+                            csv.Configuration.RegisterClassMap<OrderDataCSVListMapper>();
+                            csv.Read();
+                            csv.ReadHeader();
+                            while (csv.Read())
+                            {
+                                var record = new OrderDataCSVList
+                                {
+                                    Year = int.Parse(csv.GetField("Year")),
+                                    Month = int.Parse(csv.GetField("Month")),
+                                    Day = int.Parse(csv.GetField("Day"))
+                                };
+                                result.Add(record);
+                            }
+                        }
+                    }
+                }
+                r = result;
+            }
+            r.Add(new OrderDataCSVList { Year = DateTime.Now.Year, Month = DateTime.Now.Month, Day = DateTime.Now.Day });
+
+            using (TextWriter fileWriter = new StreamWriter(@"data/order/order.csv", true))
+            using (var csv = new CsvHelper.CsvWriter(fileWriter, System.Globalization.CultureInfo.InvariantCulture))
+            {
+                csv.Configuration.HasHeaderRecord = true;
+                csv.Configuration.RegisterClassMap<OrderDataCSVListMapper>();
+                csv.WriteRecords(r);
+            }
+        }
+
         using (TextWriter fileWriter = new StreamWriter(path, true))
         using (var csv = new CsvHelper.CsvWriter(fileWriter, System.Globalization.CultureInfo.InvariantCulture))
         {

@@ -17,17 +17,10 @@ public class Printer : MonoBehaviour
     public float sy = 0;
     public float allignWidth = -5;
     public float allignHeight = 5;
-    int printingPosition = 0;
-
-    public void OnClicked()
-    {
-        printingPosition = 0;
-        Print("a", "ＭＳ Ｐゴシック", 10f);
-    }
 
     public void Print(string FilePath, string FontFamilyName, float FontSize)
     {
-        //printingText = new StreamReader(@FilePath, false).ReadToEnd();
+        printingText = new StreamReader(@FilePath, false).ReadToEnd();
         printingText = "<l15>";
         printingText = printingText.Replace(System.Environment.NewLine, "");
         printFontDefault = new System.Drawing.Font(FontFamilyName, FontSize);

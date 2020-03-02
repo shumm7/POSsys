@@ -467,9 +467,10 @@ public class CheckController : MonoBehaviour
 
     public void AddDeposit(int num)
     {
+        NumPadKey.Value = 0;
         if (num == 1)
         {
-            GetComponent<DataLoader>().AddPayment(-int.Parse(DepositMoneyUI.text), "入金-" + DepositDescriptionUI.text, false);
+            GetComponent<DataLoader>().AddPayment(Number.ToNumber(DepositMoneyUI.text.Replace(" 円", "").Replace(",", "")), "入金-" + DepositDescriptionUI.text, false);
 
             List<string> Text = new List<string>();
             DateTime time = DateTime.Now;
@@ -478,7 +479,7 @@ public class CheckController : MonoBehaviour
             Text.Add(time.ToString("yyyy年MM月dd日 HH時mm分ss秒"));
             Text.Add("-----------------------------");
             Text.Add("入金");
-            Text.Add("入金額　　　" + Number.MarkDecimal(int.Parse(DepositMoneyUI.text)) + " 円");
+            Text.Add("入金額　　　" + Number.MarkDecimal(Number.ToNumber(DepositMoneyUI.text.Replace(" 円", "").Replace(",", ""))) + " 円");
             Text.Add("取引内容　　" + DepositDescriptionUI.text);
             Text.Add("");
             Text.Add("レジ内金額　　" + Number.MarkDecimal(GetComponent<DataLoader>().LoadLeastPayment().After) + " 円");
@@ -488,7 +489,7 @@ public class CheckController : MonoBehaviour
         }
         else if (num == -1)
         {
-            GetComponent<DataLoader>().AddPayment(int.Parse(DepositMoneyUI.text), "出金-" + DepositDescriptionUI.text, false);
+            GetComponent<DataLoader>().AddPayment(-Number.ToNumber(DepositMoneyUI.text.Replace(" 円", "").Replace(",", "")), "出金-" + DepositDescriptionUI.text, false);
 
             List<string> Text = new List<string>();
             DateTime time = DateTime.Now;
@@ -497,7 +498,7 @@ public class CheckController : MonoBehaviour
             Text.Add(time.ToString("yyyy年MM月dd日 HH時mm分ss秒"));
             Text.Add("-----------------------------");
             Text.Add("出金");
-            Text.Add("出金額　　　" + Number.MarkDecimal(int.Parse(DepositMoneyUI.text)) + " 円");
+            Text.Add("出金額　　　" + Number.MarkDecimal(Number.ToNumber(DepositMoneyUI.text.Replace(" 円", "").Replace(",", ""))) + " 円");
             Text.Add("取引内容　　" + DepositDescriptionUI.text);
             Text.Add("");
             Text.Add("レジ内金額　　" + Number.MarkDecimal(GetComponent<DataLoader>().LoadLeastPayment().After) + " 円");

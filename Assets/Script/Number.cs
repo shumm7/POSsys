@@ -152,7 +152,14 @@ public class Number : MonoBehaviour
     {
         if (CheckNumber(Number))
         {
-            return int.Parse(Number);
+            try
+            {
+                return int.Parse(Number);
+            }
+            catch (System.Exception)
+            {
+            }
+            return 0;
         }
         else
         {
