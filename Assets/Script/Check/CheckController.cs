@@ -468,10 +468,12 @@ public class CheckController : MonoBehaviour
     public void AddDeposit(int num)
     {
         NumPadKey.Value = 0;
+
         if (num == 1)
         {
             GetComponent<DataLoader>().AddPayment(Number.ToNumber(DepositMoneyUI.text.Replace(" 円", "").Replace(",", "")), "入金-" + DepositDescriptionUI.text, false);
-
+            DepositMoneyUI.transform.parent.GetComponent<InputField>().text = "0";
+            DepositDescriptionUI.transform.parent.GetComponent<InputField>().text = "";
             List<string> Text = new List<string>();
             DateTime time = DateTime.Now;
             Text.Add(GetComponent<DataLoader>().LoadConfig().StoreName);
@@ -490,7 +492,8 @@ public class CheckController : MonoBehaviour
         else if (num == -1)
         {
             GetComponent<DataLoader>().AddPayment(-Number.ToNumber(DepositMoneyUI.text.Replace(" 円", "").Replace(",", "")), "出金-" + DepositDescriptionUI.text, false);
-
+            DepositMoneyUI.transform.parent.GetComponent<InputField>().text = "0";
+            DepositDescriptionUI.transform.parent.GetComponent<InputField>().text = "";
             List<string> Text = new List<string>();
             DateTime time = DateTime.Now;
             Text.Add(GetComponent<DataLoader>().LoadConfig().StoreName);

@@ -166,4 +166,40 @@ public class Number : MonoBehaviour
             return 0;
         }
     }
+
+    public static string FormatDate(int year, int month, int day)
+    {
+        string res = "";
+
+        if (year < 1000)
+        {
+            for (int i = 0; i < year.ToString().Length; i++)
+                res += "0";
+            res += year.ToString();
+        }
+        else
+        {
+            res += year.ToString();
+        }
+
+        if (month < 10)
+        {
+            res += "0" + month.ToString();
+        }
+        else
+        {
+            res += month.ToString();
+        }
+
+        if (day < 10)
+        {
+            res += "0" + day.ToString();
+        }
+        else
+        {
+            res += day.ToString();
+        }
+
+        return res;
+    }
 }
