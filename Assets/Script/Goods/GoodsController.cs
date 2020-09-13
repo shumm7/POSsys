@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class GoodsController : MonoBehaviour
 {
-    private int GoodsNumber;
+    private int GoodsNumber = 0;
     public int ButtonMode;
     public Button GoodsData;
     public Button TabName;
@@ -14,13 +14,23 @@ public class GoodsController : MonoBehaviour
     public GameObject TabNameUI;
     public GameObject 商品リスト;
     public GameObject 商品リストテンプレート;
+    public Dropdown CategoryUI;
 
     void Start()
     {
-        GoodsNumber = 0;
+        CategoryUI = GoodsUI.transform.Find("商品情報").Find("Category").GetComponent<Dropdown>();
+        GoodsNumber = -1;
         ButtonMode = 0;
         ButtonPressed(ButtonMode);
+        ClearForm();
+
+        CategoryUI.options.Clear();
+        CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[0] });
+        CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[1] });
+        CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[2] });
+        CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[3] });
     }
+
 
     public void ButtonPressed(int num)
     {
@@ -30,6 +40,12 @@ public class GoodsController : MonoBehaviour
             GoodsUI.SetActive(true);
             TabNameUI.SetActive(false);
             setGoodsData(GoodsNumber);
+
+            CategoryUI.options.Clear();
+            CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[0] });
+            CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[1] });
+            CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[2] });
+            CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[3] });
         }
         else if (num==4)
         {
@@ -48,7 +64,15 @@ public class GoodsController : MonoBehaviour
     {
         GoodsNumber = number;
         var tempList = DataLoader.LoadList();
-        var record = tempList[GoodsNumber];
+        DataLoader.List record;
+        if(GoodsNumber == -1)
+        {
+            record = new DataLoader.List();
+        }
+        else
+        {
+            record = tempList[GoodsNumber];
+        }
 
         foreach (Transform l in 商品リスト.transform)
         {
@@ -66,12 +90,6 @@ public class GoodsController : MonoBehaviour
         }
 
         Transform temp = GoodsUI.transform.Find("商品情報");
-        Dropdown CategoryUI = temp.Find("Category").GetComponent<Dropdown>();
-        CategoryUI.options.Clear();
-        CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[0] });
-        CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[1] });
-        CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[2] });
-        CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[3] });
         CategoryUI.value = record.Category;
         CategoryUI.RefreshShownValue();
         temp.Find("Name").GetComponent<InputField>().text = record.Name;
@@ -80,8 +98,13 @@ public class GoodsController : MonoBehaviour
         temp.Find("Available").GetComponent<Toggle>().isOn = record.Available;
         temp.Find("ImagePath").GetComponent<InputField>().text = record.ImagePath;
         temp.Find("ID").GetComponent<InputField>().text = record.ID;
-
         string dir = "image/" + record.ImagePath;
+        SetImage(dir);
+    }
+
+    private void SetImage(string dir)
+    {
+        Transform temp = GoodsUI.transform.Find("商品情報");
         if (GetComponent<DataLoader>().checkExist(dir))
         {
             RawImage img = temp.Find("RawImage").GetComponent<RawImage>();
@@ -126,5 +149,104 @@ public class GoodsController : MonoBehaviour
             tempList.TabName[i] = TabNameUI.transform.Find("Tab" + (i + 1).ToString()).GetComponent<InputField>().text;
         }
         GetComponent<DataLoader>().SaveConfig(tempList);
+    }
+
+    private DataLoader.List GetDataFromForm()
+    {
+        Transform temp = GoodsUI.transform.Find("商品情報");
+        return new DataLoader.List
+        {
+            Category = CategoryUI.value,
+            Name = temp.Find("Name").GetComponent<InputField>().text,
+            Price = Number.ToNumber(temp.Find("Price").GetComponent<InputField>().text),
+            Stock = Number.ToNumber(temp.Find("Stock").GetComponent<InputField>().text),
+            Available = temp.Find("Available").GetComponent<Toggle>().isOn,
+            ImagePath = temp.Find("ImagePath").GetComponent<InputField>().text,
+            ID = temp.Find("ID").GetComponent<InputField>().text
+        };
+    }
+
+    public void addGoodsData()
+    {
+        var tempList = DataLoader.LoadList();
+        tempList.Add(GetDataFromForm());
+        DataLoader.SaveList(tempList);
+        ButtonPressed(0);
+    }
+
+    public void removeGoodsData()
+    {
+        try
+        {
+            var tempList = DataLoader.LoadList();
+            var t = tempList[GoodsNumber];
+            Transform temp = GoodsUI.transform.Find("商品情報");
+
+            if (t.Name == temp.Find("Name").GetComponent<InputField>().text &&
+                t.Category == CategoryUI.value &&
+                t.Price.ToString() == temp.Find("Price").GetComponent<InputField>().text &&
+                t.Stock.ToString() == temp.Find("Stock").GetComponent<InputField>().text &&
+                t.Available == temp.Find("Available").GetComponent<Toggle>().isOn &&
+                t.ImagePath == temp.Find("ImagePath").GetComponent<InputField>().text &&
+                t.ID == temp.Find("ID").GetComponent<InputField>().text
+                )
+            {
+                tempList.RemoveAt(GoodsNumber);
+                DataLoader.SaveList(tempList);
+                ClearForm();
+                ButtonPressed(0);
+            }
+        }
+        catch
+        {
+            Debug.LogWarning("Number " + GoodsNumber.ToString() + " was not exist.");
+        }
+    }
+
+    public void ClearForm()
+    {
+        Transform temp = GoodsUI.transform.Find("商品情報");
+        CategoryUI.value=0;
+        temp.Find("Name").GetComponent<InputField>().text = "";
+        temp.Find("Price").GetComponent<InputField>().text = "";
+        temp.Find("Stock").GetComponent<InputField>().text = "";
+        temp.Find("Available").GetComponent<Toggle>().isOn = true;
+        temp.Find("ImagePath").GetComponent<InputField>().text = "";
+        temp.Find("ID").GetComponent<InputField>().text = "";
+
+        GoodsNumber = -1;
+        string dir = "image/" + "";
+        SetImage(dir);
+    }
+
+    public void Swap(int num)
+    {
+        try
+        {
+            if (num == 1) //UP
+            {
+                var tempList = DataLoader.LoadList();
+                var tmp = tempList[GoodsNumber];
+                tempList[GoodsNumber] = tempList[GoodsNumber-1];
+                tempList[GoodsNumber-1] = tmp;
+                DataLoader.SaveList(tempList);
+                GoodsNumber -= 1;
+                ButtonPressed(0);
+            }
+            else if (num == -1) //DOWN
+            {
+                var tempList = DataLoader.LoadList();
+                var tmp = tempList[GoodsNumber];
+                tempList[GoodsNumber] = tempList[GoodsNumber + 1];
+                tempList[GoodsNumber + 1] = tmp;
+                DataLoader.SaveList(tempList);
+                GoodsNumber += 1;
+                ButtonPressed(0);
+            }
+        }
+        catch
+        {
+            Debug.LogWarning("It can't move.");
+        }
     }
 }

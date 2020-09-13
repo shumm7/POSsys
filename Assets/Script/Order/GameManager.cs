@@ -47,6 +47,7 @@ public class GameManager : MonoBehaviour
         public int Amount = 0;
         public int Price = 0;
     }
+
     public class OrderDataCSVList
     {
         public int Year;
@@ -583,54 +584,7 @@ public class GameManager : MonoBehaviour
 
     public void SaveOrderList(string path)
     {
-        if(path.Substring(path.Length - 5) == "0.csv")
-        {
-            var r = new List<OrderDataCSVList>();
-            if (GetComponent<DataLoader>().checkExist("data/order/order.csv"))
-            {
-                var result = new List<OrderDataCSVList>();
-                {
-                    using (TextReader fileReader = File.OpenText(path))
-                    {
-                        using (var csv = new CsvReader(fileReader, System.Globalization.CultureInfo.InvariantCulture))
-                        {
-                            csv.Configuration.HasHeaderRecord = true;
-                            csv.Configuration.RegisterClassMap<OrderDataCSVListMapper>();
-                            csv.Read();
-                            csv.ReadHeader();
-                            while (csv.Read())
-                            {
-                                var record = new OrderDataCSVList
-                                {
-                                    Year = int.Parse(csv.GetField("Year")),
-                                    Month = int.Parse(csv.GetField("Month")),
-                                    Day = int.Parse(csv.GetField("Day"))
-                                };
-                                result.Add(record);
-                            }
-                        }
-                    }
-                }
-                r = result;
-            }
-            r.Add(new OrderDataCSVList { Year = DateTime.Now.Year, Month = DateTime.Now.Month, Day = DateTime.Now.Day });
-
-            using (TextWriter fileWriter = new StreamWriter(@"data/order/order.csv", true))
-            using (var csv = new CsvHelper.CsvWriter(fileWriter, System.Globalization.CultureInfo.InvariantCulture))
-            {
-                csv.Configuration.HasHeaderRecord = true;
-                csv.Configuration.RegisterClassMap<OrderDataCSVListMapper>();
-                csv.WriteRecords(r);
-            }
-        }
-
-        using (TextWriter fileWriter = new StreamWriter(path, true))
-        using (var csv = new CsvHelper.CsvWriter(fileWriter, System.Globalization.CultureInfo.InvariantCulture))
-        {
-            csv.Configuration.HasHeaderRecord = true;
-            csv.Configuration.RegisterClassMap<OrderListMapper>();
-            csv.WriteRecords(orderList);
-        }
+        GetComponent<DataLoader>().SaveOrderList(path, orderList);
     }
 
     public void バーコード読み取り()

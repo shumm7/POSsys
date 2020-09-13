@@ -96,9 +96,9 @@ public class CheckController : MonoBehaviour
                 DataLoader.Payment temp = GetComponent<DataLoader>().LoadPayment(ID);
                 DateUI.text = temp.Time.ToString("yyyy/MM/dd hh:mm:ss");
                 DescriptionUI.text = temp.Description;
-                PaymentUI.text = temp.Increase.ToString();
-                BeforeUI.text = temp.Before.ToString();
-                AfterUI.text = temp.After.ToString();
+                PaymentUI.text = Number.MarkDecimal(temp.Increase) + " 円";
+                BeforeUI.text = Number.MarkDecimal(temp.Before) + " 円";
+                AfterUI.text = Number.MarkDecimal(temp.After) + " 円";
                 IDUI.text = ID.ToString();
                 if (DescriptionUI.text.Substring(0,4)=="取り消し")
                 {
@@ -381,6 +381,21 @@ public class CheckController : MonoBehaviour
             {
                 var list = DataLoader.LoadList();
                 var 購入履歴 = LoadOrderList(path);
+                var orderList = GetComponent<DataLoader>().LoadOrderList(path);
+
+                for(int i=0; i<orderList.Count; i++)
+                {
+                    orderList[i].Amount *= -1;
+                    orderList[i].Price *= -1;
+                }
+                int cnt = 0;
+                while (true)
+                {
+                    if (!GetComponent<DataLoader>().checkExist("data/order/" + date + "/" + cnt.ToString() + ".csv"))
+                        break;
+                    cnt++;
+                }
+                GetComponent<DataLoader>().SaveOrderList(@"data/order/" + date + "/" + cnt.ToString() + ".csv", orderList);
 
                 List<string> Text = new List<string>();
                 DateTime time = DateTime.Now;

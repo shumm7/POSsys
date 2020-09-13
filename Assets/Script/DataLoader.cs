@@ -221,6 +221,97 @@ public class DataLoader : MonoBehaviour
         saveFile("data/payment/" + count.ToString() + ".json", JsonMapper.ToJson(temp));
     }
 
+    public void SaveOrderList(string path, List<GameManager.OrderList> orderList)
+    {
+        if (path.Substring(path.Length - 5) == "0.csv")
+        {
+            var r = new List<GameManager.OrderDataCSVList>();
+            if (GetComponent<DataLoader>().checkExist("data/order/order.csv"))
+            {
+                var result = new List<GameManager.OrderDataCSVList>();
+                {
+                    using (TextReader fileReader = File.OpenText(@"data/order/order.csv"))
+                    {
+                        using (var csv = new CsvReader(fileReader, System.Globalization.CultureInfo.InvariantCulture))
+                        {
+                            csv.Configuration.HasHeaderRecord = true;
+                            csv.Configuration.RegisterClassMap<GameManager.OrderDataCSVListMapper>();
+                            csv.Read();
+                            csv.ReadHeader();
+                            while (csv.Read())
+                            {
+                                var record = new GameManager.OrderDataCSVList
+                                {
+                                    Year = int.Parse(csv.GetField("Year")),
+                                    Month = int.Parse(csv.GetField("Month")),
+                                    Day = int.Parse(csv.GetField("Day"))
+                                };
+                                result.Add(record);
+                            }
+                        }
+                    }
+                }
+                r = result;
+            }
+            r.Add(new GameManager.OrderDataCSVList { Year = DateTime.Now.Year, Month = DateTime.Now.Month, Day = DateTime.Now.Day });
+
+            using (TextWriter fileWriter = new StreamWriter(@"data/order/order.csv", false))
+            using (var csv = new CsvWriter(fileWriter, System.Globalization.CultureInfo.InvariantCulture))
+            {
+                csv.Configuration.HasHeaderRecord = true;
+                csv.Configuration.RegisterClassMap<GameManager.OrderDataCSVListMapper>();
+                csv.WriteRecords(r);
+            }
+        }
+
+        using (TextWriter fileWriter = new StreamWriter(path, true))
+        using (var csv = new CsvWriter(fileWriter, System.Globalization.CultureInfo.InvariantCulture))
+        {
+            csv.Configuration.HasHeaderRecord = true;
+            csv.Configuration.RegisterClassMap<GameManager.OrderListMapper>();
+            csv.WriteRecords(orderList);
+        }
+    }
+
+    public List<GameManager.OrderList> LoadOrderList(string path)
+    {
+        var result = new List<GameManager.OrderList>();
+        if (GetComponent<DataLoader>().checkExist(path))
+        {
+            using (TextReader fileReader = File.OpenText(@path))
+            {
+                using (var csv = new CsvReader(fileReader, System.Globalization.CultureInfo.InvariantCulture))
+                {
+                    csv.Configuration.HasHeaderRecord = true;
+                    csv.Configuration.RegisterClassMap<GameManager.OrderListMapper>();
+                    csv.Read();
+                    csv.ReadHeader();
+                    while (csv.Read())
+                    {
+                        var record = new GameManager.OrderList
+                        {
+                            Name = csv.GetField("Name"),
+                            Category = int.Parse(csv.GetField("Category")),
+                            Number = int.Parse(csv.GetField("Number")),
+                            Amount = int.Parse(csv.GetField("Amount")),
+                            Price = int.Parse(csv.GetField("Price")),
+                        };
+
+                        result.Add(record);
+                    }
+                    fileReader.Close();
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public bool saveFile(string Filename)
+    {
+        return saveFile(Filename, null);
+    }
+
     public bool saveFile(string Filename, string text)
     {
         StreamWriter sw = null;
