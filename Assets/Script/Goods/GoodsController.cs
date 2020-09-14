@@ -24,13 +24,17 @@ public class GoodsController : MonoBehaviour
         ButtonPressed(ButtonMode);
         ClearForm();
 
+        setTabUI();
+    }
+
+    private void setTabUI()
+    {
         CategoryUI.options.Clear();
         CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[0] });
         CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[1] });
         CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[2] });
         CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[3] });
     }
-
 
     public void ButtonPressed(int num)
     {
@@ -40,12 +44,8 @@ public class GoodsController : MonoBehaviour
             GoodsUI.SetActive(true);
             TabNameUI.SetActive(false);
             setGoodsData(GoodsNumber);
-
-            CategoryUI.options.Clear();
-            CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[0] });
-            CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[1] });
-            CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[2] });
-            CategoryUI.options.Add(new Dropdown.OptionData { text = GetComponent<DataLoader>().LoadConfig().TabName[3] });
+            setTabUI();
+            
         }
         else if (num==4)
         {
@@ -124,21 +124,28 @@ public class GoodsController : MonoBehaviour
 
     public void saveGoodsData()
     {
-        DataLoader.List data = new DataLoader.List();
-        var tempList = DataLoader.LoadList();
+        try
+        {
+            DataLoader.List data = new DataLoader.List();
+            var tempList = DataLoader.LoadList();
 
-        Transform temp = GoodsUI.transform.Find("商品情報");
-        data.Category = temp.Find("Category").GetComponent<Dropdown>().value;
-        data.Name = temp.Find("Name").GetComponent<InputField>().text;
-        data.Price = Number.ToNumber(temp.Find("Price").GetComponent<InputField>().text);
-        data.Stock = Number.ToNumber(temp.Find("Stock").GetComponent<InputField>().text);
-        data.Available = temp.Find("Available").GetComponent<Toggle>().isOn;
-        data.ImagePath = temp.Find("ImagePath").GetComponent<InputField>().text;
-        data.ID = temp.Find("ID").GetComponent<InputField>().text;
+            Transform temp = GoodsUI.transform.Find("商品情報");
+            data.Category = temp.Find("Category").GetComponent<Dropdown>().value;
+            data.Name = temp.Find("Name").GetComponent<InputField>().text;
+            data.Price = Number.ToNumber(temp.Find("Price").GetComponent<InputField>().text);
+            data.Stock = Number.ToNumber(temp.Find("Stock").GetComponent<InputField>().text);
+            data.Available = temp.Find("Available").GetComponent<Toggle>().isOn;
+            data.ImagePath = temp.Find("ImagePath").GetComponent<InputField>().text;
+            data.ID = temp.Find("ID").GetComponent<InputField>().text;
 
-        tempList[GoodsNumber] = data;
-        DataLoader.SaveList(tempList);
-        setGoodsData(GoodsNumber);
+            tempList[GoodsNumber] = data;
+            DataLoader.SaveList(tempList);
+            setGoodsData(GoodsNumber);
+        }
+        catch
+        {
+            Debug.LogWarning("Can't save a goods data.");
+        }
     }
 
     public void saveTabName()
@@ -171,6 +178,7 @@ public class GoodsController : MonoBehaviour
         var tempList = DataLoader.LoadList();
         tempList.Add(GetDataFromForm());
         DataLoader.SaveList(tempList);
+        GoodsNumber = tempList.Count - 1;
         ButtonPressed(0);
     }
 
@@ -195,6 +203,9 @@ public class GoodsController : MonoBehaviour
                 DataLoader.SaveList(tempList);
                 ClearForm();
                 ButtonPressed(0);
+                temp.Find("Price").GetComponent<InputField>().text = "";
+                temp.Find("Stock").GetComponent<InputField>().text = "";
+                temp.Find("Available").GetComponent<Toggle>().isOn = true;
             }
         }
         catch
