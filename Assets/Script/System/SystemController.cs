@@ -27,7 +27,8 @@ public class SystemController : MonoBehaviour
         SettingsForm.transform.Find("LINENotifyPurchaseNotice").GetComponent<Toggle>().isOn = temp.LINENotifyPurchaseNotice;
         SettingsForm.transform.Find("BarcodeReader").GetComponent<Toggle>().isOn = temp.BarcodeReader;
         SettingsForm.transform.Find("BarcodeReaderTimeOut").GetComponent<InputField>().text = temp.BarcodeReaderTimeOut.ToString();
-
+        SettingsForm.transform.Find("Printer").GetComponent<Toggle>().isOn = temp.Printer;
+        SettingsForm.transform.Find("PrinterName").GetComponent<InputField>().text = temp.PrinterName;
     }
 
     public void saveSettingsData()
@@ -81,6 +82,8 @@ public class SystemController : MonoBehaviour
         {
             temp.BarcodeReaderTimeOut = 0.1;
         }
+        temp.Printer = SettingsForm.transform.Find("Printer").GetComponent<Toggle>().isOn;
+        temp.PrinterName = SettingsForm.transform.Find("PrinterName").GetComponent<InputField>().text;
 
         GetComponent<DataLoader>().SaveConfig(temp);
         setSettingsData();
