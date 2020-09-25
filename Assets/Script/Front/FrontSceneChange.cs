@@ -33,8 +33,6 @@ public class FrontSceneChange : MonoBehaviour
             DataLoader.SaveList(temp);
         }
 
-        DataLoader.SaveList(GetComponent<DataLoader>().RemoveListDuplicate(DataLoader.LoadList()) );
-
         StoreName.text = Name + " 管理画面";
     }
 

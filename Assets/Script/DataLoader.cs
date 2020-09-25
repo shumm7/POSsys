@@ -23,15 +23,11 @@ public class DataLoader : MonoBehaviour
         public bool LINENotifyPurchaseNotice = false;
         public bool BarcodeReader = false;
         public double BarcodeReaderTimeOut = 0.1;
-        public bool Printer = false;
-        public string PrinterName = "Microsoft XPS Document Writer";
     }
-
     public bool SaveConfig(Config _config)
     {
         return generateConfig(@"config.json", JsonUtility.ToJson(_config));
     }
-
     public Config LoadConfig()
     {
         string json = loadFile(@"config.json");
@@ -309,30 +305,6 @@ public class DataLoader : MonoBehaviour
         }
 
         return result;
-    }
-
-    public List<List> RemoveListDuplicate(List<List> _list)
-    {
-        int i = 0;
-        foreach(var record in _list)
-        {
-            var cat = record.Category;
-            var name = record.Name;
-
-            int count = 0;
-            foreach (var d in _list)
-            {
-                if(d.Category == cat && d.Name == name && i!=count)
-                {
-                    _list[count].Name += "-";
-                    RemoveListDuplicate(_list);
-                }
-                count++;
-            }
-
-            i++;
-        }
-        return _list;
     }
 
     public bool saveFile(string Filename)

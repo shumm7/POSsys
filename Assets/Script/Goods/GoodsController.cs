@@ -137,7 +137,7 @@ public class GoodsController : MonoBehaviour
         data.ID = temp.Find("ID").GetComponent<InputField>().text;
 
         tempList[GoodsNumber] = data;
-        DataLoader.SaveList(GetComponent<DataLoader>().RemoveListDuplicate(tempList));
+        DataLoader.SaveList(tempList);
         setGoodsData(GoodsNumber);
     }
 
@@ -170,7 +170,7 @@ public class GoodsController : MonoBehaviour
     {
         var tempList = DataLoader.LoadList();
         tempList.Add(GetDataFromForm());
-        DataLoader.SaveList(GetComponent<DataLoader>().RemoveListDuplicate(tempList));
+        DataLoader.SaveList(tempList);
         ButtonPressed(0);
     }
 

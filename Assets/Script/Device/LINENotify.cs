@@ -12,7 +12,7 @@ public class LINENotify : MonoBehaviour
     public static void SendMessage(string message, string token)
     {
         var result = sendMessage(message, token);
-        Debug.LogWarning(result);
+        Debug.Log(result);
     }
 
     private static async Task sendMessage(string message, string token)
