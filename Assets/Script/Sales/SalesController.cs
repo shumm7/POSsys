@@ -37,6 +37,16 @@ public class SalesController : MonoBehaviour
     public GameObject 時間帯別売上商品リスト;
     public GameObject 時間帯別売上商品;
 
+    //商品別売上
+    public Text 商品別売上日付;
+    private int 商品別売上日付番号;
+    public Text 商品別売上商品名;
+    private int 商品別売上商品番号;
+    public Text 商品別売上売上額;
+    public Text 商品別売上個数;
+    public GameObject 商品別売上商品リスト;
+    public GameObject 商品別売上商品;
+
     void Start()
     {
         UImode = 0;
@@ -50,7 +60,8 @@ public class SalesController : MonoBehaviour
 
     }
 
-    public void Clicked小ボタン(int num){
+    public void Clicked小ボタン(int num)
+    {
         SetUI(num);
     }
 
@@ -109,7 +120,7 @@ public class SalesController : MonoBehaviour
         {
             UI[0].SetActive(false);
             UI[1].SetActive(true);
-            //UI[2].SetActive(false);
+            UI[2].SetActive(false);
             //UI[3].SetActive(false);
             Clicked時間帯別売上日付ボタン(-1);
         }
@@ -117,8 +128,9 @@ public class SalesController : MonoBehaviour
         {
             UI[0].SetActive(false);
             UI[1].SetActive(false);
-            //UI[2].SetActive(true);
+            UI[2].SetActive(true);
             //UI[3].SetActive(false);
+            Clicked商品別売上日付ボタン(-1);
         }
         else if (num == 3) //商品別売上
         {
@@ -129,55 +141,57 @@ public class SalesController : MonoBehaviour
         }
     }
 
-    private List<GameManager.OrderDataCSVList> 日付データ取得(){
+    private List<GameManager.OrderDataCSVList> 日付データ取得()
+    {
         var r = new List<GameManager.OrderDataCSVList>();
-            if (GetComponent<DataLoader>().checkExist("data/order/order.csv"))
+        if (GetComponent<DataLoader>().checkExist("data/order/order.csv"))
+        {
+            var result = new List<GameManager.OrderDataCSVList>();
             {
-                var result = new List<GameManager.OrderDataCSVList>();
+                using (TextReader fileReader = File.OpenText(@"data/order/order.csv"))
                 {
-                    using (TextReader fileReader = File.OpenText(@"data/order/order.csv"))
+                    using (var csv = new CsvReader(fileReader, System.Globalization.CultureInfo.InvariantCulture))
                     {
-                        using (var csv = new CsvReader(fileReader, System.Globalization.CultureInfo.InvariantCulture))
+                        csv.Configuration.HasHeaderRecord = true;
+                        csv.Configuration.RegisterClassMap<GameManager.OrderDataCSVListMapper>();
+                        csv.Read();
+                        csv.ReadHeader();
+                        while (csv.Read())
                         {
-                            csv.Configuration.HasHeaderRecord = true;
-                            csv.Configuration.RegisterClassMap<GameManager.OrderDataCSVListMapper>();
-                            csv.Read();
-                            csv.ReadHeader();
-                            while (csv.Read())
+                            var record = new GameManager.OrderDataCSVList
                             {
-                                var record = new GameManager.OrderDataCSVList
-                                {
-                                    Year = int.Parse(csv.GetField("Year")),
-                                    Month = int.Parse(csv.GetField("Month")),
-                                    Day = int.Parse(csv.GetField("Day"))
-                                };
-                                
-                                if(注文データ数(record) != 0)
-                                    result.Add(record);
-                            }
+                                Year = int.Parse(csv.GetField("Year")),
+                                Month = int.Parse(csv.GetField("Month")),
+                                Day = int.Parse(csv.GetField("Day"))
+                            };
+
+                            if (注文データ数(record) != 0)
+                                result.Add(record);
                         }
-                        fileReader.Close();
                     }
+                    fileReader.Close();
                 }
-                r = result;
             }
+            r = result;
+        }
 
         return r;
     }
 
-    private GameManager.OrderDataCSVList 最新日付データ取得(){
+    private GameManager.OrderDataCSVList 最新日付データ取得()
+    {
         return 日付データ取得()[0];
     }
 
     private int 注文データ数(GameManager.OrderDataCSVList Date)
     {
         string dir = Number.FormatDate(Date.Year, Date.Month, Date.Day);
-        if(File.Exists(@"data/order/" + dir + "/0.csv"))
+        if (File.Exists(@"data/order/" + dir + "/0.csv"))
         {
             int cnt = 0;
             while (true)
             {
-                if(!File.Exists(@"data/order/" + dir + "/" + cnt +".csv"))
+                if (!File.Exists(@"data/order/" + dir + "/" + cnt + ".csv"))
                 {
                     return cnt;
                 }
@@ -199,25 +213,25 @@ public class SalesController : MonoBehaviour
     private List<GameManager.OrderList> 時間帯別注文データ取得(GameManager.OrderDataCSVList Date, int Hour)
     {
         List<GameManager.OrderList> result = new List<GameManager.OrderList>();
-        for(int i=0; i< 注文データ数(Date); i++)
+        for (int i = 0; i < 注文データ数(Date); i++)
         {
             var data = 注文データ取得(Date, i);
             var Time = File.GetCreationTime(@"data/order/" + Number.FormatDate(日付リスト[時間帯別売上日付番号].Year, 日付リスト[時間帯別売上日付番号].Month, 日付リスト[時間帯別売上日付番号].Day) + "/" + i.ToString() + ".csv");
 
-            if ( int.Parse(Time.ToString("HH")) == Hour)
+            if (int.Parse(Time.ToString("HH")) == Hour)
             {
                 foreach (var r in data)
                 {
-                    if(result.Count == 0)
+                    if (result.Count == 0)
                     {
                         result.Add(r);
                     }
                     else
                     {
                         bool flag = false;
-                        for(int cnt=0; cnt<result.Count; cnt++)
+                        for (int cnt = 0; cnt < result.Count; cnt++)
                         {
-                            if(result[cnt].Number == r.Number)
+                            if (result[cnt].Number == r.Number)
                             {
                                 result[cnt].Amount += r.Amount;
                                 result[cnt].Price += r.Price;
@@ -225,7 +239,7 @@ public class SalesController : MonoBehaviour
                                 break;
                             }
                         }
-                        if(!flag) result.Add(r);
+                        if (!flag) result.Add(r);
                     }
                 }
             }
@@ -233,10 +247,43 @@ public class SalesController : MonoBehaviour
         return result;
     }
 
+    private GameManager.OrderList 商品別注文データ取得(GameManager.OrderDataCSVList Date, int Category, string Name)
+    {
+        int result = 0;
+        for (int i = 0; i < 注文データ数(Date); i++)
+        {
+            var data = 注文データ取得(Date, i);
+            foreach(var record in data)
+            {
+                if(record.Category==Category && record.Name == Name)
+                {
+                    result += record.Amount;
+                } 
+            }
+        }
+
+        var list = DataLoader.LoadList();
+        int cnt = 0;
+        int Price = 0;
+        int Number = 0;
+        foreach (var record in list)
+        {
+            if(record.Category == Category && record.Name == Name)
+            {
+                Number = cnt;
+                Price = record.Price * result;
+                break;
+            }
+            cnt++;
+        }
+
+        return new GameManager.OrderList { Amount = result, Category = Category, Number = Number, Name =  Name, Price = Price};
+    }
+
     private int 注文総額取得(List<GameManager.OrderList> orderList)
     {
         int price = 0;
-        foreach(var record in orderList)
+        foreach (var record in orderList)
         {
             price += record.Price;
         }
@@ -246,7 +293,7 @@ public class SalesController : MonoBehaviour
     private void 当日売上商品リストUI設定(List<GameManager.OrderList> list)
     {
         if (日付データ数 > 0)
-        SetScrollView(list, 当日売上商品リスト.transform, 当日売上商品.transform);
+            SetScrollView(list, 当日売上商品リスト.transform, 当日売上商品.transform);
     }
 
     private void 時間帯別売上商品リストUI設定(List<GameManager.OrderList> list)
@@ -327,5 +374,81 @@ public class SalesController : MonoBehaviour
             時間帯別売上総売上額.text = Number.MarkDecimal(売上総額) + " 円";
             時間帯別売上個数.text = 売上個数.ToString() + " 個";
         }
+    }
+
+    public void Clicked商品別売上日付ボタン(int num)
+    {
+        if (日付データ数 > 0)
+        {
+            if (num == -2) //画面更新
+            {
+
+            }
+            else if (num == -1) //リセット
+            {
+                商品別売上日付番号 = 日付データ数 - 1;
+                DateTime t = DateTime.Now;
+                商品別売上商品番号 = 0;
+            }
+            else if (num == 0) //日付 前へ
+            {
+                商品別売上日付番号 = Number.Range(商品別売上日付番号 - 1, 0, 日付データ数 - 1);
+            }
+            else if (num == 1) //日付 次へ
+            {
+                商品別売上日付番号 = Number.Range(商品別売上日付番号 + 1, 0, 日付データ数 - 1);
+            }
+
+            商品別売上日付.text = 日付リスト[商品別売上日付番号].Year.ToString() + "年 " + 日付リスト[商品別売上日付番号].Month.ToString() + "月 " + 日付リスト[商品別売上日付番号].Day.ToString() + "日";
+            var list = 時間帯別注文データ取得(日付リスト[時間帯別売上日付番号], 時間帯別売上時間番号);
+            商品別売上商品リストUI設定(DataLoader.LoadList());
+
+        }
+    }
+
+    private void 商品別売上商品リストUI設定(List<DataLoader.List> list)
+    {
+        int cnt = 0;
+        Transform Scroll = 商品別売上商品リスト.transform;
+        Transform Prefabs = 商品別売上商品.transform;
+
+        while (true)
+        {
+            if (Scroll.Find(cnt.ToString()) != null)
+            {
+                Destroy(Scroll.Find(cnt.ToString()).gameObject);
+            }
+            else
+            {
+                break;
+            }
+
+            cnt++;
+        }
+
+         cnt = 0;
+         foreach (var record in list)
+         {
+            var child = Instantiate(Prefabs.gameObject, Prefabs);
+            child.name = cnt.ToString();
+            child.transform.Find("Name").GetComponent<Text>().text = record.Name;
+            child.transform.Find("Price").GetComponent<Text>().text = Number.MarkDecimal(record.Price) + " 円";
+            child.transform.SetParent(Scroll);
+            child.SetActive(true);
+            child.GetComponent<Button>().onClick.AddListener(() => { Clicked商品別売上商品ボタン(int.Parse(child.name)); });
+            cnt++;
+         }
+
+        商品別売上商品名.text = list[商品別売上商品番号].Name;
+        var data = 商品別注文データ取得(日付リスト[商品別売上日付番号], list[商品別売上商品番号].Category, list[商品別売上商品番号].Name);
+        商品別売上売上額.text = Number.MarkDecimal(data.Price) + " 円";
+        商品別売上個数.text = Number.MarkDecimal(data.Amount) + " 個";
+
+    }
+
+    public void Clicked商品別売上商品ボタン(int num)
+    {
+        商品別売上商品番号 = num;
+        Clicked商品別売上日付ボタン(-2);
     }
 }

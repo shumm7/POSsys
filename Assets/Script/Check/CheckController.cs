@@ -287,64 +287,15 @@ public class CheckController : MonoBehaviour
         int money = int.Parse(OpeningUIText.text.Substring(0, OpeningUIText.text.Length - 2).Replace(",", ""));
         GetComponent<DataLoader>().AddPayment(money, "開店前レジ金設定", true);
 
-        List<string> Text = new List<string>();
         DateTime time = DateTime.Now;
-        Text.Add(GetComponent<DataLoader>().LoadConfig().StoreName);
-        Text.Add("");
-        Text.Add(time.ToString("yyyy年MM月dd日 HH時mm分ss秒"));
-        Text.Add("-----------------------------");
-        Text.Add("レジ金設定");
-        Text.Add("設定額　　　" + Number.MarkDecimal(money) + " 円");
-        Text.Add("設定前　　　" + Number.MarkDecimal(BeforeCash) + " 円");
-        Text.Add("");
-        Text.Add("-----------------------------");
-        for(int i=0; i<10; i++)
-        {
-            string temp = OpeningUI.transform.Find(i.ToString()).GetComponent<InputField>().text;
-            if (temp != "") {
-                Text.Add(note[i].ToString() + "円 @ " + temp);
-            }
-            else
-            {
-                Text.Add(note[i].ToString() + "円 @ " + "0");
-            }
-        }
-
-        GetComponent<Receipt>().GenerateReceipt(Text, true);
+        GetComponent<Receipt>().レジ金設定レシート(money, BeforeCash, OpeningUI, note);
     }
 
     public void レジ金チェック()
     {
         int money = int.Parse(CheckUIInput.text.Substring(0, CheckUIInput.text.Length - 2).Replace(",", ""));
 
-        List<string> Text = new List<string>();
-        DateTime time = DateTime.Now;
-        Text.Add(GetComponent<DataLoader>().LoadConfig().StoreName);
-        Text.Add("");
-        Text.Add(time.ToString("yyyy年MM月dd日 HH時mm分ss秒"));
-        Text.Add("-----------------------------");
-        Text.Add("レジ金確認");
-        Text.Add("入力額　　　　" + Number.MarkDecimal(money) + " 円");
-        Text.Add("レジ内金額　　" + Number.MarkDecimal(GetComponent<DataLoader>().LoadLeastPayment().After) + " 円");
-        Text.Add("");
-        Text.Add("誤差額　　　　" + Number.MarkDecimal(money - GetComponent<DataLoader>().LoadLeastPayment().After) + " 円");
-        Text.Add("");
-        Text.Add("-----------------------------");
-
-        for (int i = 0; i < 10; i++)
-        {
-            string temp = CheckUI.transform.Find(i.ToString()).GetComponent<InputField>().text;
-            if (temp != "")
-            {
-                Text.Add(note[i].ToString() + "円 @ " + temp);
-            }
-            else
-            {
-                Text.Add(note[i].ToString() + "円 @ " + "0");
-            }
-        }
-
-        GetComponent<Receipt>().GenerateReceipt(Text, true);
+        GetComponent<Receipt>().レジ金チェックレシート(money, CheckUI, note);
     }
 
     public void 取引ID増減(int num)
@@ -397,26 +348,7 @@ public class CheckController : MonoBehaviour
                 }
                 GetComponent<DataLoader>().SaveOrderList(@"data/order/" + date + "/" + cnt.ToString() + ".csv", orderList);
 
-                List<string> Text = new List<string>();
-                DateTime time = DateTime.Now;
-                Text.Add(GetComponent<DataLoader>().LoadConfig().StoreName);
-                Text.Add("");
-                Text.Add(time.ToString("yyyy年MM月dd日 HH時mm分ss秒"));
-                Text.Add("-----------------------------");
-                Text.Add("会計取り消し");
-                Text.Add("払い戻し額　　" + Number.MarkDecimal(temp.Increase) + " 円");
-                Text.Add("取引内容　　　" + temp.Description);
-                Text.Add("");
-                foreach (var record in 購入履歴)
-                {
-                    Text.Add(record.Name + new String('　', 12 - record.Name.Length) + Number.MarkDecimal(record.Price) + "　円");
-                    Text.Add("　　　" + (record.Price / record.Amount) + "　@　" + Number.MarkDecimal(record.Amount) + "　円");
-                }
-                Text.Add("");
-                Text.Add("レジ内金額　　" + Number.MarkDecimal(GetComponent<DataLoader>().LoadLeastPayment().After) + " 円");
-                Text.Add("");
-                Text.Add("-----------------------------");
-                GetComponent<Receipt>().GenerateReceipt(Text, true);
+                GetComponent<Receipt>().注文会計取り消しレシート(temp, 購入履歴);
 
                 temp.Description = "取り消し-" + temp.Description;
                 Directory.CreateDirectory("data/payment");
@@ -432,20 +364,7 @@ public class CheckController : MonoBehaviour
             }
             else
             {
-                List<string> Text = new List<string>();
-                DateTime time = DateTime.Now;
-                Text.Add(GetComponent<DataLoader>().LoadConfig().StoreName);
-                Text.Add("");
-                Text.Add(time.ToString("yyyy年MM月dd日 HH時mm分ss秒"));
-                Text.Add("-----------------------------");
-                Text.Add("会計取り消し");
-                Text.Add("払い戻し額　　" + Number.MarkDecimal(temp.Increase) + " 円");
-                Text.Add("取引内容　　　" + temp.Description);
-                Text.Add("");
-                Text.Add("レジ内金額　　" + Number.MarkDecimal(GetComponent<DataLoader>().LoadLeastPayment().After) + " 円");
-                Text.Add("");
-                Text.Add("-----------------------------");
-                GetComponent<Receipt>().GenerateReceipt(Text, true);
+                GetComponent<Receipt>().会計取り消しレシート(temp);
 
                 temp.Description = "取り消し-" + temp.Description;
                 Directory.CreateDirectory("data/payment");
@@ -458,20 +377,7 @@ public class CheckController : MonoBehaviour
             DataLoader.Payment temp = GetComponent<DataLoader>().LoadPayment(ID);
             GetComponent<DataLoader>().AddPayment(-temp.Increase, "払い戻し-" + temp.Description, false);
 
-            List<string> Text = new List<string>();
-            DateTime time = DateTime.Now;
-            Text.Add(GetComponent<DataLoader>().LoadConfig().StoreName);
-            Text.Add("");
-            Text.Add(time.ToString("yyyy年MM月dd日 HH時mm分ss秒"));
-            Text.Add("-----------------------------");
-            Text.Add("会計取り消し");
-            Text.Add("払い戻し額　　" + Number.MarkDecimal(temp.Increase) + " 円");
-            Text.Add("取引内容　　　" + temp.Description);
-            Text.Add("");
-            Text.Add("レジ内金額　　" + Number.MarkDecimal(GetComponent<DataLoader>().LoadLeastPayment().After) + " 円");
-            Text.Add("");
-            Text.Add("-----------------------------");
-            GetComponent<Receipt>().GenerateReceipt(Text, true);
+            GetComponent<Receipt>().会計取り消しレシート(temp);
 
             temp.Description = "取り消し-" + temp.Description;
             Directory.CreateDirectory("data/payment");
@@ -489,40 +395,16 @@ public class CheckController : MonoBehaviour
             GetComponent<DataLoader>().AddPayment(Number.ToNumber(DepositMoneyUI.text.Replace(" 円", "").Replace(",", "")), "入金-" + DepositDescriptionUI.text, false);
             DepositMoneyUI.transform.parent.GetComponent<InputField>().text = "0";
             DepositDescriptionUI.transform.parent.GetComponent<InputField>().text = "";
-            List<string> Text = new List<string>();
-            DateTime time = DateTime.Now;
-            Text.Add(GetComponent<DataLoader>().LoadConfig().StoreName);
-            Text.Add("");
-            Text.Add(time.ToString("yyyy年MM月dd日 HH時mm分ss秒"));
-            Text.Add("-----------------------------");
-            Text.Add("入金");
-            Text.Add("入金額　　　" + Number.MarkDecimal(Number.ToNumber(DepositMoneyUI.text.Replace(" 円", "").Replace(",", ""))) + " 円");
-            Text.Add("取引内容　　" + DepositDescriptionUI.text);
-            Text.Add("");
-            Text.Add("レジ内金額　　" + Number.MarkDecimal(GetComponent<DataLoader>().LoadLeastPayment().After) + " 円");
-            Text.Add("");
-            Text.Add("-----------------------------");
-            GetComponent<Receipt>().GenerateReceipt(Text, true);
+
+            GetComponent<Receipt>().レジ入金レシート(DepositMoneyUI, DepositDescriptionUI);
         }
         else if (num == -1)
         {
             GetComponent<DataLoader>().AddPayment(-Number.ToNumber(DepositMoneyUI.text.Replace(" 円", "").Replace(",", "")), "出金-" + DepositDescriptionUI.text, false);
             DepositMoneyUI.transform.parent.GetComponent<InputField>().text = "0";
             DepositDescriptionUI.transform.parent.GetComponent<InputField>().text = "";
-            List<string> Text = new List<string>();
-            DateTime time = DateTime.Now;
-            Text.Add(GetComponent<DataLoader>().LoadConfig().StoreName);
-            Text.Add("");
-            Text.Add(time.ToString("yyyy年MM月dd日 HH時mm分ss秒"));
-            Text.Add("-----------------------------");
-            Text.Add("出金");
-            Text.Add("出金額　　　" + Number.MarkDecimal(Number.ToNumber(DepositMoneyUI.text.Replace(" 円", "").Replace(",", ""))) + " 円");
-            Text.Add("取引内容　　" + DepositDescriptionUI.text);
-            Text.Add("");
-            Text.Add("レジ内金額　　" + Number.MarkDecimal(GetComponent<DataLoader>().LoadLeastPayment().After) + " 円");
-            Text.Add("");
-            Text.Add("-----------------------------");
-            GetComponent<Receipt>().GenerateReceipt(Text, true);
+
+            GetComponent<Receipt>().レジ出金レシート(DepositMoneyUI, DepositDescriptionUI);
         }
     }
 

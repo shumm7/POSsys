@@ -82,7 +82,6 @@ public class GameManager : MonoBehaviour
         productList = DataLoader.LoadList();
 
         orderList = new List<OrderList>();
-        StoreName = GetComponent<DataLoader>().LoadConfig().StoreName;
         isBarcodeReader = GetComponent<DataLoader>().LoadConfig().BarcodeReader;
         GetComponent<BarcodeReader>().TimeOut = GetComponent<DataLoader>().LoadConfig().BarcodeReaderTimeOut;
         TabMode = 0;
@@ -549,37 +548,7 @@ public class GameManager : MonoBehaviour
 
     public void GenerateReceipt(List<OrderList> _list, int cnt, DateTime time)
     {
-        DataLoader c = GetComponent<DataLoader>();
-        int Tax = GetComponent<DataLoader>().LoadConfig().Tax;
-
-        List<string> Text = new List<string>();
-        Text.Add(StoreName);
-        Text.Add("");
-        Text.Add(time.ToString("yyyy年MM月dd日 HH時mm分ss秒"));
-        Text.Add("-----------------------------");
-        foreach (OrderList record in _list)
-        {
-            Text.Add(record.Name + new String('　', 12 - record.Name.Length) + Number.MarkDecimal(record.Price) + "　円");
-            Text.Add("　　　" + (record.Price / record.Amount)+ "　@　" + Number.MarkDecimal(record.Amount) + "　円");
-        }
-        Text.Add("小　計／" + 注文情報取得().Amount + "点" + new String('　', 5 + 注文情報取得().Amount.ToString().Length) + Number.MarkDecimal(注文情報取得().Price) + " 円");
-        Text.Add("");
-        Text.Add("-----------------------------");
-        if(割引額!=0)
-            Text.Add("割　引   " + Number.MarkDecimal(割引額) + "　円");
-        Text.Add("合　計   " + Number.MarkDecimal(注文情報取得().Price - 割引額) + "　円");
-        Text.Add("内　税   " + Number.MarkDecimal(Number.InsideTax(注文情報取得().Price - 割引額, Tax)) + "　円");
-        Text.Add("お預り   " + Number.MarkDecimal(現金) + "　円");
-        Text.Add("お釣り   " + Number.MarkDecimal(現金 - (注文情報取得().Price - 割引額)) + "　円");
-        Text.Add("");
-        Text.Add("上記正に領収いたしました");
-        Text.Add("   伝票番号 " + time.ToString("yyyyMMdd_HHmmss") + "(" + cnt.ToString() + ")");
-        Text.Add("");
-        Text.Add("-----------------------------");
-        Text.Add("お買い上げ、ありがとうございました。");
-        Text.Add("またのご来店をお待ちしております。");
-
-        GetComponent<Receipt>().GenerateReceipt(Text, GetComponent<DataLoader>().LoadConfig().LINENotifyPurchaseNotice);
+        GetComponent<Receipt>().注文完了レシート(_list, 注文情報取得(), 割引額, 現金, cnt);
     }
 
     public void SaveOrderList(string path)
