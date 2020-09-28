@@ -331,7 +331,7 @@ public class CheckController : MonoBehaviour
             if (GetComponent<DataLoader>().checkExist(path))
             {
                 var list = DataLoader.LoadList();
-                var 購入履歴 = LoadOrderList(path);
+                var 購入履歴 = GetComponent<DataLoader>().LoadOrderList(path);
                 var orderList = GetComponent<DataLoader>().LoadOrderList(path);
 
                 for(int i=0; i<orderList.Count; i++)
@@ -393,18 +393,24 @@ public class CheckController : MonoBehaviour
         if (num == 1)
         {
             GetComponent<DataLoader>().AddPayment(Number.ToNumber(DepositMoneyUI.text.Replace(" 円", "").Replace(",", "")), "入金-" + DepositDescriptionUI.text, false);
+            int money = Number.ToNumber(DepositMoneyUI.text.Replace("円", "").Replace(",", "").Replace(" ", ""));
+            string description = DepositDescriptionUI.text;
+
             DepositMoneyUI.transform.parent.GetComponent<InputField>().text = "0";
             DepositDescriptionUI.transform.parent.GetComponent<InputField>().text = "";
 
-            GetComponent<Receipt>().レジ入金レシート(DepositMoneyUI, DepositDescriptionUI);
+            GetComponent<Receipt>().レジ入金レシート(money, description);
         }
         else if (num == -1)
         {
             GetComponent<DataLoader>().AddPayment(-Number.ToNumber(DepositMoneyUI.text.Replace(" 円", "").Replace(",", "")), "出金-" + DepositDescriptionUI.text, false);
+            int money = Number.ToNumber(DepositMoneyUI.text.Replace("円", "").Replace(",", "").Replace(" ", ""));
+            string description = DepositDescriptionUI.text;
+
             DepositMoneyUI.transform.parent.GetComponent<InputField>().text = "0";
             DepositDescriptionUI.transform.parent.GetComponent<InputField>().text = "";
 
-            GetComponent<Receipt>().レジ出金レシート(DepositMoneyUI, DepositDescriptionUI);
+            GetComponent<Receipt>().レジ出金レシート(money, description);
         }
     }
 
@@ -412,35 +418,6 @@ public class CheckController : MonoBehaviour
     {
         NumPadKey.対象切り替え(UI);
         NumPadKey.数値上限設定(limit);
-    }
-
-    public List<GameManager.OrderList> LoadOrderList(string path)
-    {
-        List<GameManager.OrderList> temp = new List<GameManager.OrderList>();
-
-        using (TextReader fileReader = File.OpenText(@path))
-        {
-            using (var csv = new CsvReader(fileReader, System.Globalization.CultureInfo.InvariantCulture))
-            {
-                csv.Configuration.HasHeaderRecord = true;
-                csv.Configuration.RegisterClassMap<GameManager.OrderListMapper>();
-                csv.Read();
-                csv.ReadHeader();
-                while (csv.Read())
-                {
-                    var record = new GameManager.OrderList
-                    {
-                        Name = csv.GetField("Name"),
-                        Category = int.Parse(csv.GetField("Category")),
-                        Number = int.Parse(csv.GetField("Number")),
-                        Amount = int.Parse(csv.GetField("Amount")),
-                        Price = int.Parse(csv.GetField("Category")),
-                    };
-                    temp.Add(record);
-                }
-            }
-        }
-        return temp;
     }
 
 }

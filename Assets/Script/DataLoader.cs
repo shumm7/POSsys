@@ -25,6 +25,9 @@ public class DataLoader : MonoBehaviour
         public double BarcodeReaderTimeOut = 0.1;
         public bool Printer = false;
         public string PrinterName = "Microsoft XPS Document Writer";
+        public string PrinterFontFamily = "ＭＳゴシック";
+        public string FormatDate = "yyyy年MM月dd日";
+        public string FormatTime = "HH時mm分ss秒";
     }
 
     public bool SaveConfig(Config _config)

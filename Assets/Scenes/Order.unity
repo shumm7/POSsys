@@ -7416,6 +7416,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3748899e845dc544c92533ed3d4fc4bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  FormatDataDirectory: data/template/
 --- !u!1 &1201632096
 GameObject:
   m_ObjectHideFlags: 0

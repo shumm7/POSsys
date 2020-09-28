@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
+using System;
 using System.IO;
 
 public class Printer : MonoBehaviour
@@ -16,12 +17,12 @@ public class Printer : MonoBehaviour
     public float sx = 0; //印刷開始位置
     public float sy = 0;
     public float allignWidth = -5;
-    public float allignHeight = 5;
+    public float allignHeight = -5;
+    public Input TestPrintInput;
 
     public void OnClicked()
     {
-        Print("こんにちは<x50>test", "ＭＳゴシック", 32, "Microsoft XPS Document Writer");
-
+        Print("test", GetComponent<DataLoader>().LoadConfig().PrinterFontFamily, 12, GetComponent<DataLoader>().LoadConfig().PrinterName);
     }
 
     public void Print(string Text, string FontFamilyName, float FontSize, string printerName)
@@ -30,7 +31,7 @@ public class Printer : MonoBehaviour
         {
             PrinterName = printerName;
             printingText = Text;
-            printingText = printingText.Replace(System.Environment.NewLine, "<n>");
+            printingText = printingText.Replace(Environment.NewLine, "<n>");
             printFontDefault = new System.Drawing.Font(FontFamilyName, FontSize);
 
             System.Drawing.Printing.PrintDocument pd = new System.Drawing.Printing.PrintDocument();
@@ -50,17 +51,14 @@ public class Printer : MonoBehaviour
     {
         try
         {
+            System.Drawing.Font printFont = printFontDefault;
+            //印刷中の場所
+            float cx = sx;
+            float cy = sy;
+            float maxHeight = printFont.Size;
 
-        System.Drawing.Font printFont = printFontDefault;
-        //印刷中の場所
-        float cx = sx;
-        float cy = sy;
-        float maxHeight = printFont.Size;
-        Debug.Log(maxHeight);
-
-
-        bool flag = false;
-        string tag = "";
+            bool flag = false;
+            string tag = "";
             for (int i = 0; i < printingText.Length; i++) {
                 if (i + 2 < printingText.Length)
                 {
@@ -71,7 +69,7 @@ public class Printer : MonoBehaviour
                     e.Graphics.DrawString(printingText.Substring(i, 1), printFont, brush, cx, cy);
                     cx += e.Graphics.MeasureString(printingText.Substring(i, 1), printFont).Width + allignWidth;
                     e.Graphics.DrawString(printingText.Substring(i + 1, 1), printFont, brush, cx, cy);
-                    cx += e.Graphics.MeasureString(printingText.Substring(i, 1), printFont).Width + allignWidth;
+                    cx += e.Graphics.MeasureString(printingText.Substring(i+1, 1), printFont).Width + allignWidth;
                     break;
                 }
 
@@ -251,7 +249,7 @@ public class Printer : MonoBehaviour
                             flag = true;
                         }
                         break;
-                    case "<l": //直線（引数：太さ）
+                    case "<p": //直線（引数：太さ）
                         if (GetTag(printingText, i, "number") == "")
                         {
                             cx = sx;
@@ -294,7 +292,7 @@ public class Printer : MonoBehaviour
         }
     }
 
-    private string GetTag(string Text, int StartTag, string mode)
+    public string GetTag(string Text, int StartTag, string mode)
     {
         if(Text.Substring(StartTag+2, 1) == ">")
         {
