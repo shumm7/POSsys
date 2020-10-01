@@ -1,0 +1,7 @@
+<tDATE> <tTIME>
+-----------------------------
+入金
+金額　　<tPAYMENT> 円
+取引内容　　<tPAYMENT_DESCRIPTION>
+-----------------------------
+レジ内金額　<tREGISTER_CASH> 円

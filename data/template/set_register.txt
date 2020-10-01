@@ -1,0 +1,7 @@
+<tDATE> <tTIME>
+-----------------------------
+レジ金設定
+設定額　　<tAFTER_CASH> 円
+設定前　　<tBEFORE_CASH> 円
+-----------------------------
+<lCASH_DETAIL><mCASH_NAME> 円   x   <mCASH_AMOUNT><n><l>

@@ -16,13 +16,13 @@ public class Printer : MonoBehaviour
     public Brush brush = new SolidBrush(System.Drawing.Color.Black);
     public float sx = 0; //印刷開始位置
     public float sy = 0;
-    public float allignWidth = -5;
-    public float allignHeight = -5;
+    public float allignWidth = 0;
+    public float allignHeight = 0;
     public Input TestPrintInput;
 
     public void OnClicked()
     {
-        Print("test", GetComponent<DataLoader>().LoadConfig().PrinterFontFamily, 12, GetComponent<DataLoader>().LoadConfig().PrinterName);
+        Print("test", GetComponent<DataLoader>().LoadConfig().PrinterFontFamily, 6, GetComponent<DataLoader>().LoadConfig().PrinterName);
     }
 
     public void Print(string Text, string FontFamilyName, float FontSize, string printerName)
@@ -40,6 +40,7 @@ public class Printer : MonoBehaviour
                 pd.PrinterSettings.PrinterName = PrinterName;
 
             pd.Print();
+            pd.Dispose();
         }
         catch
         {
@@ -52,6 +53,7 @@ public class Printer : MonoBehaviour
         try
         {
             System.Drawing.Font printFont = printFontDefault;
+            
             //印刷中の場所
             float cx = sx;
             float cy = sy;
@@ -59,7 +61,10 @@ public class Printer : MonoBehaviour
 
             bool flag = false;
             string tag = "";
+            string space = "";
             for (int i = 0; i < printingText.Length; i++) {
+                space = printingText.Substring(i, 1);
+
                 if (i + 2 < printingText.Length)
                 {
                     tag = printingText.Substring(i, 2);
@@ -71,6 +76,16 @@ public class Printer : MonoBehaviour
                     e.Graphics.DrawString(printingText.Substring(i + 1, 1), printFont, brush, cx, cy);
                     cx += e.Graphics.MeasureString(printingText.Substring(i+1, 1), printFont).Width + allignWidth;
                     break;
+                }
+
+                switch (space)
+                {
+                    case "　":
+                        cx += e.Graphics.MeasureString("　", printFont).Width;
+                        break;
+                     case " ":
+                        cx += e.Graphics.MeasureString(" ", printFont).Width;
+                        break;
                 }
 
                 switch (tag)

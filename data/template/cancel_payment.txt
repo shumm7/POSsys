@@ -1,0 +1,7 @@
+<tDATE> <tTIME>
+-----------------------------
+会計取り消し
+払い戻し　　<tPAYMENT_RETURN> 円
+取引内容　　<tPAYMENT_DESCRIPTION>
+-----------------------------
+レジ内金額　<tREGISTER_CASH> 円

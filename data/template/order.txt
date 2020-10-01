@@ -1,0 +1,25 @@
+<s20><tSTORE_NAME><s10>
+
+<tDATE>
+<tTIME>
+-----------------------------
+<lGOODS><mGOODS_NAME>　<mPRICE> 円
+     <mGOODS_PRICE> 円 @ <mAMOUNT> 個<n><l>
+
+小　計／<tAMOUNT_TOTAL>点    <tPRICE_TOTAL> 円
+
+-----------------------------
+割　引　　<tDISCOUNT>　円
+合　計　　<tTOTAL>　円
+内　税　　<tINSIDE_TAX>　円
+お預り　　<tPRICE_KEEP>　円
+お釣り　　<tPRICE_RETURN>　円
+
+上記正に領収いたしました
+   伝票 No.<tRECEIPT_NUMBER>
+
+-----------------------------
+お買い上げ、ありがとうございました。
+またのご来店をお待ちしております。
+<n>
+<n>

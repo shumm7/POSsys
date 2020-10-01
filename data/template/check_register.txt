@@ -1,0 +1,9 @@
+<tDATE> <tTIME>
+-----------------------------
+レジ金確認
+入力額　　　　<tINPUT_CASH> 円
+レジ内金額　　<tREGISTER_CASH> 円
+
+誤差　　　　　<tDIFFERENCE> 円
+-----------------------------
+<lCASH_DETAIL><mCASH_NAME> 円   x   <mCASH_AMOUNT><n><l>
