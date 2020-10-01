@@ -12,6 +12,11 @@ public class Receipt : MonoBehaviour
 
     public void GenerateReceipt(List<string> Text, bool useLINENotify)
     {
+        GenerateReceipt(GetComponent<DataLoader>().LoadConfig().PrinterName, Text, useLINENotify);
+    }
+
+    public void GenerateReceipt(string PrinterName, List<string> Text, bool useLINENotify)
+    {
         DataLoader c = GetComponent<DataLoader>();
         DateTime time = DateTime.Now;
         Directory.CreateDirectory("data/receipt/");
@@ -23,7 +28,7 @@ public class Receipt : MonoBehaviour
         {
             //Todo LINENotify にタグが入らないようにする
             string LINENotifyText = "";
-            string Token = GetComponent<DataLoader>().LoadConfig().LINENotifyToken;
+            string Token = c.LoadConfig().LINENotifyToken;
 
             foreach (string line in Text)
             {
@@ -35,23 +40,32 @@ public class Receipt : MonoBehaviour
             LINENotify.SendMessage(LINENotifyText, Token);
         }
 
-            if (GetComponent<DataLoader>().LoadConfig().Printer)
+            if (c.LoadConfig().Printer)
             {
                 string PrinterText = "";
                 foreach (string line in Text)
                 {
                     PrinterText += (line + "<n>");
                 }
-                GetComponent<Printer>().Print(PrinterText, GetComponent<DataLoader>().LoadConfig().PrinterFontFamily, 12, GetComponent<DataLoader>().LoadConfig().PrinterName);
+                GetComponent<Printer>().Print(PrinterText, c.LoadConfig().PrinterFontFamily, c.LoadConfig().PrinterFontSize, PrinterName);
             }
 
+        string FileText = "";
         foreach (string line in Text)
         {
-            c.AddLine(@Filename, line);
+            FileText += (line + Environment.NewLine);
         }
+
+        FileText = RemoveTags(FileText);
+        c.saveFile(@Filename, FileText);
     }
 
     public void 注文完了レシート(List<GameManager.OrderList> _list, GameManager.OrderList 注文情報, int 割引額, int 現金, int Count)
+    {
+        注文完了レシート("order.txt", GetComponent<DataLoader>().LoadConfig().PrinterName, _list, 注文情報, 割引額, 現金, Count);
+    }
+
+    public void 注文完了レシート(string templateDir, string PrinterName, List<GameManager.OrderList> _list, GameManager.OrderList 注文情報, int 割引額, int 現金, int Count)
     {
         DateTime time = DateTime.Now;
         DataLoader c = GetComponent<DataLoader>();
@@ -62,7 +76,7 @@ public class Receipt : MonoBehaviour
         {
             string[] del = { "\r\n" };
             List<string> Text = new List<string>();
-            var t = GetComponent<DataLoader>().loadFile(FormatDataDirectory + "order.txt");
+            var t = GetComponent<DataLoader>().loadFile(FormatDataDirectory + templateDir);
 
             //タグ （STORE_NAME, DATE, TIME）
             t = t.Replace(Environment.NewLine, "<n>");
@@ -78,7 +92,7 @@ public class Receipt : MonoBehaviour
             t = t.Replace("<tINSIDE_TAX>", Number.MarkDecimal(Number.InsideTax(注文情報.Price - 割引額, Tax))); //内税
             t = t.Replace("<tPRICE_KEEP>", Number.MarkDecimal(現金)); //お預かり
             t = t.Replace("<tPRICE_RETURN>", Number.MarkDecimal(現金 - (注文情報.Price - 割引額))); //お釣り
-            t = t.Replace("<tRECEIPT_NUMBER>", Count.ToString()); //小計（割引額を含まない総額）
+            t = t.Replace("<tNUMBER>", Count.ToString()); //レシート番号
 
             string Tag;
             bool flag = false;
@@ -107,7 +121,7 @@ public class Receipt : MonoBehaviour
                                     TempTag = t.Substring(j, 3);
                                 }
                                 else
-                               {
+                                {
                                     break;
                                 }
 
@@ -148,12 +162,17 @@ public class Receipt : MonoBehaviour
                 Text.Add(record);
             }
 
-            GenerateReceipt(Text, GetComponent<DataLoader>().LoadConfig().LINENotifyPurchaseNotice);
+            GenerateReceipt(PrinterName, Text, GetComponent<DataLoader>().LoadConfig().LINENotifyPurchaseNotice);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             Debug.LogError("Failed to print! :" + e);
         }
+    }
+
+    public void 注文伝票レシート(string PrinterName, List<GameManager.OrderList> _list, GameManager.OrderList 注文情報, int 割引額, int 現金, int Number)
+    {
+        注文完了レシート("order_list.txt", PrinterName, _list, 注文情報, 割引額, 現金, Number);
     }
 
     public void レジ金設定レシート(int money, int BeforeCash, GameObject OpeningUI, int[] note)
@@ -523,6 +542,28 @@ public class Receipt : MonoBehaviour
         t = t.Replace("<tSTORE_NAME>", GetComponent<DataLoader>().LoadConfig().StoreName);
         t = t.Replace("<tDATE>", DateTime.Now.ToString(GetComponent<DataLoader>().LoadConfig().FormatDate));
         t = t.Replace("<tTIME>", DateTime.Now.ToString(GetComponent<DataLoader>().LoadConfig().FormatTime));
+
+        foreach (var record in t.Split(del, StringSplitOptions.None))
+        {
+            Text.Add(record);
+        }
+
+        GenerateReceipt(Text, GetComponent<DataLoader>().LoadConfig().LINENotifyPurchaseNotice);
+    }
+
+    public void 整理券レシート(string PrinterName, int Number)
+    {
+        string[] del = { "\r\n" };
+        List<string> Text = new List<string>();
+        var t = GetComponent<DataLoader>().loadFile(FormatDataDirectory + "number_ticket.txt");
+
+        //タグ （STORE_NAME, DATE, TIME）
+        t = t.Replace(Environment.NewLine, "<n>");
+
+        t = t.Replace("<tSTORE_NAME>", GetComponent<DataLoader>().LoadConfig().StoreName);
+        t = t.Replace("<tDATE>", DateTime.Now.ToString(GetComponent<DataLoader>().LoadConfig().FormatDate));
+        t = t.Replace("<tTIME>", DateTime.Now.ToString(GetComponent<DataLoader>().LoadConfig().FormatTime));
+        t = t.Replace("<tNUMBER>", Number.ToString());
 
         foreach (var record in t.Split(del, StringSplitOptions.None))
         {

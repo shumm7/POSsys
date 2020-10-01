@@ -1,0 +1,4 @@
+整理券
+<s50><tNUMBER>
+<s>
+<tSTORE_NAME>

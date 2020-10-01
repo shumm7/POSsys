@@ -1,0 +1,2 @@
+<s13>注文番号　<tNUMBER>
+<s20><lGOODS><mGOODS_NAME>　　　<X170><mAMOUNT><n><l>

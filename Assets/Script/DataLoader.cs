@@ -18,16 +18,29 @@ public class DataLoader : MonoBehaviour
         public int ScreenResolutionWidth = 1920;
         public int ScreenResolutionHeight = 1280;
         public bool FullScreen = true;
+
         public bool EnableLINENotify = false;
         public string LINENotifyToken = "";
         public bool LINENotifyPurchaseNotice = false;
+        public bool LINENotifyNumberedTicket = false; //追加
         public bool BarcodeReader = false;
         public double BarcodeReaderTimeOut = 0.1;
+
         public bool Printer = false;
         public string PrinterName = "Microsoft XPS Document Writer";
+        public string SubPrinterName = "";
         public string PrinterFontFamily = "ＭＳゴシック";
+        public int PrinterFontSize = 11;
         public string FormatDate = "yyyy年MM月dd日";
         public string FormatTime = "HH時mm分ss秒";
+
+        public bool NumberedTicket = false;
+        public int MaximumTicketNumber = 99;
+        public bool NumberedTicketPrintOnMain = true;
+
+        public bool OrderListReceipt = false;
+        public bool OrderListPrintOnMain = false;
+
     }
 
     public bool SaveConfig(Config _config)

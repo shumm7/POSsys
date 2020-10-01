@@ -22,7 +22,7 @@ public class Printer : MonoBehaviour
 
     public void OnClicked()
     {
-        Print("test", GetComponent<DataLoader>().LoadConfig().PrinterFontFamily, 6, GetComponent<DataLoader>().LoadConfig().PrinterName);
+        Print("test", GetComponent<DataLoader>().LoadConfig().PrinterFontFamily, GetComponent<DataLoader>().LoadConfig().PrinterFontSize, GetComponent<DataLoader>().LoadConfig().PrinterName);
     }
 
     public void Print(string Text, string FontFamilyName, float FontSize, string printerName)

@@ -263,6 +263,7 @@ public class SalesController : MonoBehaviour
         }
 
         var list = DataLoader.LoadList();
+        list.Add(new DataLoader.List { Name = "割引", Category = -1 });
         int cnt = 0;
         int Price = 0;
         int Number = 0;
@@ -401,7 +402,9 @@ public class SalesController : MonoBehaviour
 
             商品別売上日付.text = 日付リスト[商品別売上日付番号].Year.ToString() + "年 " + 日付リスト[商品別売上日付番号].Month.ToString() + "月 " + 日付リスト[商品別売上日付番号].Day.ToString() + "日";
             var list = 時間帯別注文データ取得(日付リスト[時間帯別売上日付番号], 時間帯別売上時間番号);
-            商品別売上商品リストUI設定(DataLoader.LoadList());
+            var GoodsList = DataLoader.LoadList();
+            GoodsList.Add(new DataLoader.List { Name = "割引", Category = -1 });
+            商品別売上商品リストUI設定(GoodsList);
 
         }
     }
@@ -426,13 +429,23 @@ public class SalesController : MonoBehaviour
             cnt++;
         }
 
+         int 割引総額 = 0;
          cnt = 0;
-         foreach (var record in list)
+        foreach (var record in list)
          {
             var child = Instantiate(Prefabs.gameObject, Prefabs);
             child.name = cnt.ToString();
             child.transform.Find("Name").GetComponent<Text>().text = record.Name;
-            child.transform.Find("Price").GetComponent<Text>().text = Number.MarkDecimal(record.Price) + " 円";
+
+            if (record.Name == "割引" && record.Category == -1)
+            {
+                child.transform.Find("Price").GetComponent<Text>().text = "";
+            }
+            else
+            {
+                child.transform.Find("Price").GetComponent<Text>().text = "単価 " + Number.MarkDecimal(record.Price) + " 円";
+            }
+
             child.transform.SetParent(Scroll);
             child.SetActive(true);
             child.GetComponent<Button>().onClick.AddListener(() => { Clicked商品別売上商品ボタン(int.Parse(child.name)); });
@@ -441,7 +454,26 @@ public class SalesController : MonoBehaviour
 
         商品別売上商品名.text = list[商品別売上商品番号].Name;
         var data = 商品別注文データ取得(日付リスト[商品別売上日付番号], list[商品別売上商品番号].Category, list[商品別売上商品番号].Name);
-        商品別売上売上額.text = Number.MarkDecimal(data.Price) + " 円";
+        if (data.Name == "割引" && data.Category == -1)
+        {
+            for (int i = 0; i < 注文データ数(日付リスト[商品別売上日付番号]); i++)
+            {
+                foreach(var r in 注文データ取得(日付リスト[商品別売上日付番号], i))
+                {
+                    if (r.Name == "割引" && r.Category == -1)
+                    {
+                        割引総額 += r.Price;
+                    }
+                }
+            }
+
+            商品別売上売上額.text = Number.MarkDecimal(割引総額) + " 円";
+
+        }
+        else
+        {
+            商品別売上売上額.text = Number.MarkDecimal(data.Price) + " 円";
+        }
         商品別売上個数.text = Number.MarkDecimal(data.Amount) + " 個";
 
     }

@@ -549,6 +549,51 @@ public class GameManager : MonoBehaviour
     public void GenerateReceipt(List<OrderList> _list, int cnt, DateTime time)
     {
         GetComponent<Receipt>().注文完了レシート(_list, 注文情報取得(), 割引額, 現金, cnt);
+
+
+        int number = cnt;
+        if (GetComponent<DataLoader>().LoadConfig().NumberedTicket)
+        {
+            int MaximumNumber = GetComponent<DataLoader>().LoadConfig().MaximumTicketNumber;
+            if (MaximumNumber > 0)
+            {
+                if (number > MaximumNumber)
+                {
+                    int m = cnt / MaximumNumber;
+                    number -= m * MaximumNumber;
+                }
+            }
+            string printer;
+            if (GetComponent<DataLoader>().LoadConfig().NumberedTicketPrintOnMain)
+            {
+                printer = GetComponent<DataLoader>().LoadConfig().PrinterName;
+            }
+            else
+            {
+                printer = GetComponent<DataLoader>().LoadConfig().SubPrinterName;
+            }
+             
+            if (printer == "")
+                printer = GetComponent<DataLoader>().LoadConfig().PrinterName;
+
+            GetComponent<Receipt>().整理券レシート(printer, number);
+        }
+
+
+        if (GetComponent<DataLoader>().LoadConfig().OrderListReceipt)
+        {
+            string printer;
+            if (GetComponent<DataLoader>().LoadConfig().OrderListPrintOnMain)
+            {
+                printer = GetComponent<DataLoader>().LoadConfig().PrinterName;
+            }
+            else
+            {
+                printer = GetComponent<DataLoader>().LoadConfig().SubPrinterName;
+            }
+            GetComponent<Receipt>().注文伝票レシート(printer, _list, 注文情報取得(), 割引額, 現金, number);
+        }
+
     }
 
     public void SaveOrderList(string path)
