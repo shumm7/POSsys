@@ -3,10 +3,50 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.IO;
 
 public class Printer : MonoBehaviour
 {
+
+    [DllImport("winspool.drv", CharSet = CharSet.Auto, SetLastError = true)]
+    private static extern bool OpenPrinter(string pPrinterName,
+        out IntPtr hPrinter, IntPtr pDefault);
+
+    [DllImport("winspool.drv", SetLastError = true)]
+    private static extern bool ClosePrinter(IntPtr hPrinter);
+
+    [DllImport("winspool.drv", SetLastError = true)]
+    private static extern bool GetPrinter(IntPtr hPrinter,
+        int dwLevel, IntPtr pPrinter, int cbBuf, out int pcbNeeded);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    public struct PRINTER_INFO_2
+    {
+        public string pServerName;
+        public string pPrinterName;
+        public string pShareName;
+        public string pPortName;
+        public string pDriverName;
+        public string pComment;
+        public string pLocation;
+        public IntPtr pDevMode;
+        public string pSepFile;
+        public string pPrintProcessor;
+        public string pDatatype;
+        public string pParameters;
+        public IntPtr pSecurityDescriptor;
+        public uint Attributes;
+        public uint Priority;
+        public uint DefaultPriority;
+        public uint StartTime;
+        public uint UntilTime;
+        public uint Status;
+        public uint cJobs;
+        public uint AveragePPM;
+    }
+
     //印刷内容
     private string printingText;
     private System.Drawing.Font printFontDefault;
@@ -22,14 +62,20 @@ public class Printer : MonoBehaviour
 
     public void OnClicked()
     {
-        Print("test", GetComponent<DataLoader>().LoadConfig().PrinterFontFamily, GetComponent<DataLoader>().LoadConfig().PrinterFontSize, GetComponent<DataLoader>().LoadConfig().PrinterName);
+        var ret = Print("test", GetComponent<DataLoader>().LoadConfig().PrinterFontFamily, GetComponent<DataLoader>().LoadConfig().PrinterFontSize, GetComponent<DataLoader>().LoadConfig().PrinterName);
+
     }
 
-    public void Print(string Text, string FontFamilyName, float FontSize, string printerName)
+    public bool Print(string Text, string FontFamilyName, float FontSize, string printerName)
     {
         try
         {
             PrinterName = printerName;
+            if (!GetPrinterStatus(printerName))
+            {
+                throw new ArgumentException("Printer " + printerName + " is currently offline.", "original");
+            }
+            
             printingText = Text;
             printingText = printingText.Replace(Environment.NewLine, "<n>");
             printFontDefault = new System.Drawing.Font(FontFamilyName, FontSize);
@@ -44,9 +90,26 @@ public class Printer : MonoBehaviour
         }
         catch
         {
-            Debug.LogError("Cannot Print!");
+            Debug.LogWarning("Cannot Print!");
+            return false;
         }
+
+        return true;
     }
+
+    private bool GetPrinterStatus(string printerName)
+    {
+        PRINTER_INFO_2 PrinterInfo = GetPrinterInfo(printerName);
+        Debug.Log(PrinterInfo.Status);
+        switch (PrinterInfo.Status)
+        {
+            case 0:
+            case 1024:
+            case 131072:
+                return true;
+        }
+        return false;
+}
 
     private void pd_PrintPage(object sender, System.Drawing.Printing.PrintPageEventArgs e)
     {
@@ -338,6 +401,44 @@ public class Printer : MonoBehaviour
                 }
             }
             return "";
+        }
+    }
+
+    public static PRINTER_INFO_2 GetPrinterInfo(string printerName)
+    {
+        IntPtr hPrinter;
+        if (!OpenPrinter(printerName, out hPrinter, IntPtr.Zero))
+        {
+            throw new Win32Exception(Marshal.GetLastWin32Error());
+        }
+
+        IntPtr pPrinterInfo = IntPtr.Zero;
+        try
+        {
+            int needed;
+            GetPrinter(hPrinter, 2, IntPtr.Zero, 0, out needed);
+            if (needed <= 0)
+            {
+                throw new Exception("失敗しました。");
+            }
+
+            pPrinterInfo = Marshal.AllocHGlobal(needed);
+
+            int temp;
+            if (!GetPrinter(hPrinter, 2, pPrinterInfo, needed, out temp))
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
+
+            PRINTER_INFO_2 printerInfo = (PRINTER_INFO_2)Marshal.PtrToStructure(pPrinterInfo, typeof(PRINTER_INFO_2));
+
+            return printerInfo;
+        }
+        finally
+        {
+            //後始末をする
+            ClosePrinter(hPrinter);
+            Marshal.FreeHGlobal(pPrinterInfo);
         }
     }
 }

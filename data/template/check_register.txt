@@ -1,4 +1,5 @@
-<tDATE> <tTIME>
+<tDATE>
+<tTIME>
 -----------------------------
 レジ金確認
 入力額　　　　<tINPUT_CASH> 円

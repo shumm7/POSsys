@@ -573,6 +573,138 @@ public class Receipt : MonoBehaviour
         GenerateReceipt(Text, GetComponent<DataLoader>().LoadConfig().LINENotifyPurchaseNotice);
     }
 
+    public void 当日売上レシート(DateTime OrderDate, int OrderID, int Sales, int TotalSales, List<GameManager.OrderList> _list)
+    {
+        string[] del = { "\r\n" };
+        List<string> Text = new List<string>();
+        var t = GetComponent<DataLoader>().loadFile(FormatDataDirectory + "day_sales.txt");
+
+        //タグ （STORE_NAME, DATE, TIME）
+        t = t.Replace(Environment.NewLine, "<n>");
+
+        t = t.Replace("<tSTORE_NAME>", GetComponent<DataLoader>().LoadConfig().StoreName);
+        t = t.Replace("<tDATE>", DateTime.Now.ToString(GetComponent<DataLoader>().LoadConfig().FormatDate));
+        t = t.Replace("<tTIME>", DateTime.Now.ToString(GetComponent<DataLoader>().LoadConfig().FormatTime));
+        t = t.Replace("<tORDER_TIME>", OrderDate.ToString(GetComponent<DataLoader>().LoadConfig().FormatTime));
+        t = t.Replace("<tORDER_DATE>", OrderDate.ToString(GetComponent<DataLoader>().LoadConfig().FormatDate));
+        t = t.Replace("<tORDER_ID>", OrderID.ToString());
+        t = t.Replace("<tPRICE>", Sales.ToString());
+        t = t.Replace("<tTOTAL_PRICE>", TotalSales.ToString());
+
+        string Tag;
+        bool flag = false;
+        for (int i = 0; i < t.Length; i++)
+        {
+            string loopText;
+            if (i + 2 < t.Length)
+            {
+                Tag = t.Substring(i, 2);
+            }
+            else
+            {
+                break;
+            }
+
+            switch (Tag)
+            {
+                case "<l":
+                    if (GetComponent<Printer>().GetTag(t, i, "string") == "GOODS")
+                    {
+                        string TempTag;
+                        for (int j = i; j < t.Length; j++)
+                        {
+                            if (j + 2 < t.Length)
+                            {
+                                TempTag = t.Substring(j, 3);
+                            }
+                            else
+                            {
+                                break;
+                            }
+
+                            switch (TempTag)
+                            {
+                                case "<l>":
+                                    int dif = GetComponent<Printer>().GetTag(t, i, "string").Length + 3;
+                                    loopText = t.Substring(i + dif, j - i - dif);
+
+                                    string tempText = "";
+                                    foreach (var record in _list)
+                                    {
+                                        string m = loopText;
+                                        m = m.Replace("<mGOODS_NAME>", record.Name);
+                                        m = m.Replace("<mPRICE>", Number.MarkDecimal(record.Price));
+                                        m = m.Replace("<mGOODS_PRICE>", Number.MarkDecimal(record.Price / record.Amount));
+                                        m = m.Replace("<mAMOUNT>", Number.MarkDecimal(record.Amount));
+
+                                        tempText += m;
+                                    }
+
+                                    t = t.Replace("<l" + GetComponent<Printer>().GetTag(t, i, "string") + ">" + loopText + "<l>", tempText);
+                                    flag = true;
+                                    break;
+                            }
+                        }
+                        if (flag)
+                        {
+                            break;
+                        }
+                    }
+                    break;
+            }
+        }
+        
+        foreach (var record in t.Split(del, StringSplitOptions.None))
+        {
+            Text.Add(record);
+        }
+
+        GenerateReceipt(Text, GetComponent<DataLoader>().LoadConfig().LINENotifyPurchaseNotice);
+    }
+
+    public void 時間帯別売上レシート()
+    {
+        string[] del = { "\r\n" };
+        List<string> Text = new List<string>();
+        var t = GetComponent<DataLoader>().loadFile(FormatDataDirectory + "day_sales.txt");
+
+        //タグ （STORE_NAME, DATE, TIME）
+        t = t.Replace(Environment.NewLine, "<n>");
+
+        t = t.Replace("<tSTORE_NAME>", GetComponent<DataLoader>().LoadConfig().StoreName);
+        t = t.Replace("<tDATE>", DateTime.Now.ToString(GetComponent<DataLoader>().LoadConfig().FormatDate));
+        t = t.Replace("<tTIME>", DateTime.Now.ToString(GetComponent<DataLoader>().LoadConfig().FormatTime));
+
+        foreach (var record in t.Split(del, StringSplitOptions.None))
+        {
+            Text.Add(record);
+        }
+
+        GenerateReceipt(Text, GetComponent<DataLoader>().LoadConfig().LINENotifyPurchaseNotice);
+    }
+
+    public void 商品別売上レシート()
+    {
+        string[] del = { "\r\n" };
+        List<string> Text = new List<string>();
+        var t = GetComponent<DataLoader>().loadFile(FormatDataDirectory + "day_sales.txt");
+
+        //タグ （STORE_NAME, DATE, TIME）
+        t = t.Replace(Environment.NewLine, "<n>");
+
+        t = t.Replace("<tSTORE_NAME>", GetComponent<DataLoader>().LoadConfig().StoreName);
+        t = t.Replace("<tDATE>", DateTime.Now.ToString(GetComponent<DataLoader>().LoadConfig().FormatDate));
+        t = t.Replace("<tTIME>", DateTime.Now.ToString(GetComponent<DataLoader>().LoadConfig().FormatTime));
+
+        foreach (var record in t.Split(del, StringSplitOptions.None))
+        {
+            Text.Add(record);
+        }
+
+        GenerateReceipt(Text, GetComponent<DataLoader>().LoadConfig().LINENotifyPurchaseNotice);
+    }
+
+
     private string RemoveTags(string text)
     {
         Printer p = GetComponent<Printer>();

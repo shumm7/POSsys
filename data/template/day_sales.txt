@@ -1,0 +1,17 @@
+﻿売上ID <tORDER_ID>
+
+<tDATE>
+<tTIME>
+-----------------------------
+確定日時
+     <tORDER_DATE>
+     <tORDER_TIME>
+
+注文内容
+<lGOODS><mGOODS_NAME>　<mPRICE> 円
+     <mGOODS_PRICE> 円 @ <mAMOUNT> 個<n><l>
+
+売上 <tPRICE> 円
+-----------------------------
+この日の売上総額
+     <tTOTAL_PRICE> 円

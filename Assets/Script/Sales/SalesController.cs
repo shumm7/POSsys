@@ -483,4 +483,23 @@ public class SalesController : MonoBehaviour
         商品別売上商品番号 = num;
         Clicked商品別売上日付ボタン(-2);
     }
+
+    public void Clicked当日売上印刷ボタン()
+    {
+        int allPrice = 0;
+        for (int i = 0; i < 注文データ数(日付リスト[当日売上日付番号]); i++)
+        {
+            allPrice += 注文総額取得(注文データ取得(日付リスト[当日売上日付番号], i));
+        }
+        GetComponent<Receipt>().当日売上レシート(File.GetCreationTime(@"data/order/" + Number.FormatDate(日付リスト[当日売上日付番号].Year, 日付リスト[当日売上日付番号].Month, 日付リスト[当日売上日付番号].Day) + "/" + 当日売上注文ID番号.ToString() + ".csv"), 当日売上注文ID番号, 注文総額取得(注文データ取得(日付リスト[当日売上日付番号], 当日売上注文ID番号)), allPrice, 注文データ取得(日付リスト[当日売上日付番号], 当日売上注文ID番号));
+    }
+
+    public void Clicked時間帯別売上印刷ボタン()
+    {
+
+    }
+    public void Clicked商品別売上印刷ボタン()
+    {
+
+    }
 }
